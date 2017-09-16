@@ -9,11 +9,18 @@ import java.util.List;
  */
 public class Util
 {
-	public static <T extends Node> List<T> sort(List<T> children)
+	/**
+	 * Sorts nodes so that non-leafs are before leafs
+	 *
+	 * @param nodes Nodes to sort. Will not be changed during the sort.
+	 * @param <T>   Type of node
+	 * @return Sorted list
+	 */
+	public static <T extends Node> List<T> sort(List<T> nodes)
 	{
-		List<T> result = new ArrayList<T>(children.size());
+		List<T> result = new ArrayList<T>(nodes.size());
 
-		for (T child : children)
+		for (T child : nodes)
 		{
 			if (!child.isLeaf())
 			{
@@ -21,7 +28,7 @@ public class Util
 			}
 		}
 
-		for (T child : children)
+		for (T child : nodes)
 		{
 			if (child.isLeaf())
 			{

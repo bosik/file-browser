@@ -12,10 +12,10 @@ import java.util.List;
  * @author Nikita Bosik
  * @since 2017-09-03
  */
-public class FSDataProvider implements DataProvider<NodeFS>
+public class FSDataProvider implements DataProvider
 {
 	@Override
-	public NodeFS getRoot()
+	public Node getRoot()
 	{
 		return new NodeFolder(null)
 		{
