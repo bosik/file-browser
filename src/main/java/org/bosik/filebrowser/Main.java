@@ -43,7 +43,9 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -194,10 +196,14 @@ public class Main
 					DefaultMutableTreeNode item = (DefaultMutableTreeNode) event.getPath().getLastPathComponent();
 					Node node = (Node) item.getUserObject();
 
+					List<DefaultMutableTreeNode> nodes = new ArrayList<>();
+
 					for (int i = 0; i < item.getChildCount(); i++)
 					{
-						refreshChildren((DefaultMutableTreeNode) item.getChildAt(i));
+						nodes.add((DefaultMutableTreeNode) item.getChildAt(i));
 					}
+
+					refreshChildren(nodes);
 				}
 
 				@Override
@@ -223,6 +229,8 @@ public class Main
 			treeScroll.setPreferredSize(new Dimension(200, (int) preferredSize.getHeight()));
 
 			JPanel filePreview = new JPanel(new BorderLayout(3, 3));
+			filePreview.setPreferredSize(new Dimension(200, (int) filePreview.getPreferredSize().getHeight()));
+
 			previewText = new JTextArea("123");
 			previewText.setLineWrap(true);
 			//			previewText.setEditable(false);
@@ -300,50 +308,54 @@ public class Main
 		gui.repaint();
 	}
 
-	private void refreshChildren(final DefaultMutableTreeNode item)
+	private void refreshChildren(final List<DefaultMutableTreeNode> nodes)
 	{
-		final Node node = (Node) item.getUserObject();
-		if (!node.isLeaf())
+		progressBar.setVisible(true);
+		progressBar.setIndeterminate(true);
+
+		new SwingWorker<Void, DefaultMutableTreeNode[]>()
 		{
-			//			tree.setEnabled(false);
-			progressBar.setVisible(true);
-			progressBar.setIndeterminate(true);
-
-			item.removeAllChildren();
-
-			new SwingWorker<Void, DefaultMutableTreeNode>()
+			@Override
+			public Void doInBackground()
 			{
-				@Override
-				public Void doInBackground()
+				for (DefaultMutableTreeNode item : nodes)
 				{
-					for (Node childNode : node.getChildren())
+					final Node node = (Node) item.getUserObject();
+					if (!node.isLeaf())
 					{
-						if (!childNode.isLeaf())
+						System.out.println("Building children for " + node.getName() + "...");
+						item.removeAllChildren();
+
+						for (Node childNode : node.getChildren())
 						{
-							publish(new DefaultMutableTreeNode(childNode));
+							if (!childNode.isLeaf())
+							{
+								System.out.println("\t" + childNode.getName());
+								publish(new DefaultMutableTreeNode[] { item, new DefaultMutableTreeNode(childNode) });
+							}
 						}
 					}
-					return null;
 				}
+				return null;
+			}
 
-				@Override
-				protected void process(List<DefaultMutableTreeNode> children)
+			@Override
+			protected void process(List<DefaultMutableTreeNode[]> children)
+			{
+				for (DefaultMutableTreeNode[] child : children)
 				{
-					for (DefaultMutableTreeNode child : children)
-					{
-						item.add(child);
-					}
+					child[0].add(child[1]);
 				}
+			}
 
-				@Override
-				protected void done()
-				{
-					progressBar.setIndeterminate(false);
-					progressBar.setVisible(false);
-					//					tree.setEnabled(true);
-				}
-			}.execute();
-		}
+			@Override
+			protected void done()
+			{
+				progressBar.setIndeterminate(false);
+				progressBar.setVisible(false);
+				//					tree.setEnabled(true);
+			}
+		}.execute();
 	}
 
 	private void showFiles(final Node node)
@@ -453,25 +465,55 @@ public class Main
 
 	private void hideFileDetails()
 	{
-		// TODO
+		previewText.setVisible(false);
 	}
 
 	private void showFileDetails(Node node)
 	{
-		if (node instanceof NodeFS)
+		if (node.isLeaf())
 		{
-			NodeFS nodeFS = (NodeFS) node;
-			File file = nodeFS.getFile();
-			previewText.setText(getPreviewText(file));
+			if (node instanceof NodeFS)
+			{
+				NodeFS nodeFS = (NodeFS) node;
+				File file = nodeFS.getFile();
+				previewText.setText(getPreviewText(file));
+			}
+		}
+		else
+		{
+			previewText.setText("");
 		}
 
 		// TODO
 		// setTitle(file.getParent());
+		previewText.setVisible(true);
 	}
 
 	private static String getPreviewText(File file)
 	{
+		final int MAX_PREVIEW_SIZE = 256;
 
+		try (FileInputStream fin = new FileInputStream(file); BufferedInputStream bin = new BufferedInputStream(fin))
+		{
+			int character;
+			StringBuilder buf = new StringBuilder(MAX_PREVIEW_SIZE + 3);
+			while ((character = bin.read()) != -1 && buf.length() < MAX_PREVIEW_SIZE)
+			{
+				buf.append((char) character);
+			}
+
+			if (character != -1)
+			{
+				buf.append("...");
+			}
+
+			return buf.toString();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+			return "Can't build preview";
+		}
 	}
 
 	private void setTitle(String title)
