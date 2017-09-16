@@ -2,6 +2,7 @@ package org.bosik.filebrowser.dataProvider.file;
 
 import org.bosik.filebrowser.dataProvider.Node;
 
+import javax.swing.Icon;
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 
@@ -31,5 +32,11 @@ public abstract class NodeFS implements Node
 	{
 		return fileSystemView.getSystemDisplayName(file);
 		//		return file.getName();
+	}
+
+	@Override
+	public Icon getIcon()
+	{
+		return (getFile() != null) ? fileSystemView.getSystemIcon(getFile()) : null;
 	}
 }

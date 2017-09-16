@@ -17,7 +17,7 @@ public class FSDataProvider implements DataProvider
 	@Override
 	public Node getRoot()
 	{
-		return new NodeFolder(null)
+		return new NodeCached(new NodeFolder(null)
 		{
 			@Override
 			public String getName()
@@ -37,6 +37,6 @@ public class FSDataProvider implements DataProvider
 
 				return children;
 			}
-		};
+		});
 	}
 }

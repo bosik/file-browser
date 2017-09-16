@@ -28,7 +28,19 @@ public class NodeFolder extends NodeFS
 	@Override
 	public List<Node> getChildren()
 	{
+		System.out.println("Building children for " + getName() + "...");
+
 		List<Node> children = new ArrayList<>();
+
+		try
+		{
+			Thread.sleep(1000);
+		}
+		catch (InterruptedException e)
+		{
+			e.printStackTrace();
+			return children;
+		}
 
 		File[] files = FileSystemView.getFileSystemView().getFiles(getFile(), true);
 		for (File child : files)
@@ -40,7 +52,7 @@ public class NodeFolder extends NodeFS
 			else if (child.isFile())
 			{
 				String name = child.getName().toLowerCase();
-				if (name.endsWith(".zip") || name.endsWith(".jar"))
+				if (name.endsWith(".zip") || name.endsWith(".jar") || name.endsWith(".war"))
 				{
 					children.add(new NodeZip(child));
 				}
@@ -55,6 +67,8 @@ public class NodeFolder extends NodeFS
 				System.out.println("Unknown item type found: " + child.getName());
 			}
 		}
+
+		System.out.println("Building children for " + getName() + " finished");
 
 		return Util.sort(children);
 	}

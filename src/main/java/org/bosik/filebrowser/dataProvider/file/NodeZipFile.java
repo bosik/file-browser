@@ -2,6 +2,8 @@ package org.bosik.filebrowser.dataProvider.file;
 
 import org.bosik.filebrowser.dataProvider.Node;
 
+import javax.swing.Icon;
+import javax.swing.UIManager;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -37,5 +39,11 @@ public class NodeZipFile implements Node
 	public List<Node> getChildren()
 	{
 		return Collections.emptyList();
+	}
+
+	@Override
+	public Icon getIcon()
+	{
+		return UIManager.getIcon("FileView.fileIcon");
 	}
 }

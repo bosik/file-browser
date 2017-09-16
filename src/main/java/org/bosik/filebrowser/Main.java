@@ -24,22 +24,20 @@ import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.BevelBorder;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TreeExpansionEvent;
-import javax.swing.event.TreeWillExpandListener;
-import javax.swing.filechooser.FileSystemView;
+import javax.swing.event.TreeExpansionListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.ExpandVetoException;
+import javax.swing.tree.DefaultTreeSelectionModel;
 import javax.swing.tree.TreePath;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Point;
@@ -48,15 +46,20 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 class TreeBrowser
 {
@@ -111,20 +114,21 @@ public class Main
 	private static final String APP_TITLE    = "File Browser";
 	private static final int    ICON_PADDING = 6;
 	private static final int    BORDER_SMALL = 3;
-	private static final int    BORDER_BIG   = 5;
+	//	private static final int    BORDER_BIG   = 5;
 
 	// SYSTEM
 	private TreeBrowser browser;
-	private final Desktop desktop = Desktop.getDesktop();
+	private final Desktop         desktop         = Desktop.getDesktop();
+	private final ExecutorService executorService = Executors.newCachedThreadPool();
 
 	// GUI
-	private JPanel         ui;
-	private JTree          tree;
-	private JTable         table;
-	private JProgressBar   progressBar;
-	private JTextArea      previewText;
-	private FileTableModel fileTableModel;
-	private boolean cellSizesSet = false;
+	private JPanel       ui;
+	private JTree        tree;
+	private JTable       table;
+	private JScrollPane  panelTable;
+	private JProgressBar progressBar;
+	private JTextArea    previewText;
+	private TableModel   tableModel;
 
 	// =========================================================================================
 
@@ -136,11 +140,16 @@ public class Main
 			//ui.setBorder(new EmptyBorder(0, 0, 0, 0));
 
 			table = buildTable();
-			JScrollPane tableScroll = new JScrollPane(table);
-			tableScroll.getViewport().setBackground(Color.WHITE);
+			panelTable = new JScrollPane(table);
+			panelTable.getViewport().setBackground(Color.WHITE);
 
 			JPanel detailView = new JPanel(new BorderLayout(BORDER_SMALL, BORDER_SMALL));
-			detailView.add(tableScroll, BorderLayout.CENTER);
+			detailView.add(panelTable, BorderLayout.CENTER);
+
+			//			JLabel labelLoading = new JLabel("Loading...");
+			//			labelLoading.setAlignmentX(Component.CENTER_ALIGNMENT);
+			//			labelLoading.setAlignmentY(Component.CENTER_ALIGNMENT);
+			//			detailView.add(labelLoading);
 
 			tree = buildTree();
 			JScrollPane treeScroll = new JScrollPane(tree);
@@ -164,7 +173,7 @@ public class Main
 			progressBar = new JProgressBar();
 			panelStatus.add(progressBar, BorderLayout.EAST);
 			panelStatus.setPreferredSize(new Dimension(ui.getWidth(), 20));
-			//			progressBar.setVisible(false);
+			progressBar.setVisible(false);
 
 			ui.add(panelStatus, BorderLayout.PAGE_END);
 
@@ -183,8 +192,6 @@ public class Main
 		tree.setVisibleRowCount(15);
 		tree.setCellRenderer(new DefaultTreeCellRenderer()
 		{
-			private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
-
 			@Override
 			public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded, boolean leaf,
 					int row, boolean hasFocus)
@@ -198,19 +205,12 @@ public class Main
 				if (node != null)
 				{
 					label.setText(node.getName());
-
-					if (node instanceof NodeFS)
-					{
-						NodeFS nodeFS = (NodeFS) node;
-						if (nodeFS.getFile() != null)
-						{
-							label.setIcon(fileSystemView.getSystemIcon(nodeFS.getFile()));
-						}
-					}
+					label.setIcon(node.getIcon());
 				}
 				else
 				{
-					label.setText("(root)");
+					label.setText("Loading...");
+					label.setEnabled(false);
 				}
 
 				if (selected)
@@ -227,26 +227,71 @@ public class Main
 				return label;
 			}
 		});
-		tree.addTreeWillExpandListener(new TreeWillExpandListener()
+		tree.setSelectionModel(new DefaultTreeSelectionModel()
 		{
-			@Override
-			public void treeWillExpand(TreeExpansionEvent event) throws ExpandVetoException
+			private boolean canPathBeAdded(TreePath treePath)
 			{
-				DefaultMutableTreeNode item = (DefaultMutableTreeNode) event.getPath().getLastPathComponent();
+				DefaultMutableTreeNode item = (DefaultMutableTreeNode) treePath.getLastPathComponent();
+				return item.getUserObject() != null;
+			}
 
-				// collect children and populate theirs children
-				List<DefaultMutableTreeNode> nodes = new ArrayList<>();
-
-				for (int i = 0; i < item.getChildCount(); i++)
+			private TreePath[] getFilteredPaths(TreePath[] paths)
+			{
+				List<TreePath> returnedPaths = new ArrayList<TreePath>(paths.length);
+				for (TreePath treePath : paths)
 				{
-					nodes.add((DefaultMutableTreeNode) item.getChildAt(i));
-				}
 
-				refreshChildren(nodes);
+					if (canPathBeAdded(treePath))
+					{
+						returnedPaths.add(treePath);
+					}
+					else
+					{
+						returnedPaths.add(treePath.getParentPath());
+					}
+				}
+				return returnedPaths.toArray(new TreePath[returnedPaths.size()]);
 			}
 
 			@Override
-			public void treeWillCollapse(TreeExpansionEvent event) throws ExpandVetoException
+			public void addSelectionPath(TreePath path)
+			{
+				if (canPathBeAdded(path))
+				{
+					super.addSelectionPath(path);
+				}
+				else
+				{
+					super.addSelectionPath(path.getParentPath());
+				}
+			}
+
+			@Override
+			public void setSelectionPath(TreePath path)
+			{
+				if (canPathBeAdded(path))
+				{
+					super.setSelectionPath(path);
+				}
+			}
+
+			@Override
+			public void setSelectionPaths(TreePath[] paths)
+			{
+				super.setSelectionPaths(getFilteredPaths(paths));
+			}
+		});
+		tree.addTreeExpansionListener(new TreeExpansionListener()
+		{
+			@Override
+			public void treeExpanded(TreeExpansionEvent event)
+			{
+				DefaultMutableTreeNode item = (DefaultMutableTreeNode) event.getPath().getLastPathComponent();
+				refreshChildren(item, false);
+			}
+
+			@Override
+			public void treeCollapsed(TreeExpansionEvent event)
 			{
 			}
 		});
@@ -265,6 +310,7 @@ public class Main
 				}
 			}
 		});
+
 		tree.addKeyListener(new KeyAdapter()
 		{
 			@Override
@@ -279,8 +325,6 @@ public class Main
 						Node node = (Node) item.getUserObject();
 						showFiles(node);
 					}
-
-					e.setKeyCode(0);
 				}
 			}
 		});
@@ -296,23 +340,28 @@ public class Main
 		table.setShowHorizontalLines(false);
 		table.setBackground(Color.WHITE);
 		//table.setAutoCreateRowSorter(true);
+		table.setRowHeight(16 + ICON_PADDING);
 
-		table.getSelectionModel().addListSelectionListener(new ListSelectionListener()
+		//		table.setLayout(new BoxLayout(table, BoxLayout.X_AXIS));
+		//		table.add(Box.createHorizontalGlue());
+		//		table.add(new JLabel("Test"));
+		//		table.add(Box.createHorizontalGlue());
+
+		tableModel = new TableModel();
+		table.setModel(tableModel);
+
+		table.getSelectionModel().addListSelectionListener(e ->
 		{
-			@Override
-			public void valueChanged(ListSelectionEvent lse)
-			{
-				int row = table.getSelectionModel().getLeadSelectionIndex();
-				FileTableModel model = (FileTableModel) table.getModel();
+			int row = table.getSelectionModel().getLeadSelectionIndex();
+			TableModel model = (TableModel) table.getModel();
 
-				if (row >= 0 && row < model.getRowCount())
-				{
-					showFileDetails(model.getNode(row));
-				}
-				else
-				{
-					hideFileDetails();
-				}
+			if (row >= 0 && row < model.getRowCount())
+			{
+				showFileDetails(model.getNode(row)); // FIXME: move away from EDT
+			}
+			else
+			{
+				hideFileDetails();
 			}
 		});
 
@@ -334,7 +383,7 @@ public class Main
 			public void mousePressed(MouseEvent e)
 			{
 				Point p = e.getPoint();
-				if (e.getClickCount() == 2)
+				if (e.getClickCount() == 2) // double click
 				{
 					JTable table = (JTable) e.getSource();
 					openTableItem(table.rowAtPoint(p));
@@ -346,6 +395,8 @@ public class Main
 
 	private void openTableItem(int row)
 	{
+		// FIXME: move away from EDT
+
 		if (row != -1)
 		{
 			Node item = browser.getItems().get(row);
@@ -385,29 +436,10 @@ public class Main
 
 	private void showRootFile()
 	{
-		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(browser.getCurrentNode());
-
-		for (Node item : browser.getItems())
-		{
-			if (!item.isLeaf())
-			{
-				DefaultMutableTreeNode child = new DefaultMutableTreeNode(item);
-
-				for (Node subItem : item.getChildren())
-				{
-					if (!subItem.isLeaf())
-					{
-						child.add(new DefaultMutableTreeNode(subItem));
-					}
-				}
-
-				rootNode.add(child);
-			}
-		}
-
+		final DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(browser.getCurrentNode());
 		tree.setModel(new DefaultTreeModel(rootNode));
-		tree.expandRow(0);
-		tree.setSelectionInterval(0, 0);
+
+		refreshChildren(rootNode, true);
 	}
 
 	private TreePath findTreePath(File find)
@@ -440,70 +472,80 @@ public class Main
 		ui.repaint();
 	}
 
-	private void refreshChildren(final List<DefaultMutableTreeNode> nodes)
+	private void refreshChildren(final DefaultMutableTreeNode item, final boolean root)
 	{
-		showProgressBar();
+		// add "Loading..." stub
+		item.removeAllChildren();
+		item.add(new DefaultMutableTreeNode(null));
+		tree.repaint();
 
-		new SwingWorker<Void, DefaultMutableTreeNode[]>()
+		executorService.submit(() ->
 		{
-			@Override
-			public Void doInBackground()
-			{
-				for (DefaultMutableTreeNode item : nodes)
-				{
-					final Node node = (Node) item.getUserObject();
-					if (!node.isLeaf())
-					{
-						System.out.println("Building children for " + node.getName() + "...");
-						item.removeAllChildren();
+			// calculate children
 
-						for (Node childNode : node.getChildren())
-						{
-							if (!childNode.isLeaf())
-							{
-								System.out.println("\t" + childNode.getName());
-								publish(new DefaultMutableTreeNode[] { item, new DefaultMutableTreeNode(childNode) });
-							}
-						}
+			List<DefaultMutableTreeNode> children = new ArrayList<>();
+
+			Node node = (Node) item.getUserObject();
+			if (node != null && !node.isLeaf())
+			{
+				for (Node childNode : node.getChildren())
+				{
+					if (!childNode.isLeaf())
+					{
+						DefaultMutableTreeNode e = new DefaultMutableTreeNode(childNode);
+						e.add(new DefaultMutableTreeNode(null)); // "Loading..." stub
+						children.add(e);
 					}
 				}
-				return null;
 			}
 
-			@Override
-			protected void process(List<DefaultMutableTreeNode[]> children)
+			// remove stub & fill with actual data
+
+			SwingUtilities.invokeLater(() ->
 			{
-				for (DefaultMutableTreeNode[] child : children)
+				item.removeAllChildren();
+				for (DefaultMutableTreeNode child : children)
 				{
-					child[0].add(child[1]);
+					item.add(child);
 				}
-			}
 
-			@Override
-			protected void done()
-			{
-				hideProgressBar();
-				tree.repaint();
-				//									tree.setEnabled(true);
-			}
-		}.execute();
+				DefaultTreeModel model = (DefaultTreeModel) tree.getModel();
+				model.reload(item);
+
+				if (root)
+				{
+					tree.setSelectionInterval(0, 0);
+					tree.expandRow(0);
+
+					if (children.size() > 0)
+					{
+						showFiles((Node) children.get(0).getUserObject());
+					}
+				}
+			});
+		});
 	}
 
 	private void showFiles(final Node node)
 	{
+		// skip stub "Loading..." nodes
+		if (node == null)
+		{
+			return;
+		}
+
 		// update icon
 		// TODO
-		//		List<Icon> images = new ArrayList<>();
-		//		images.add(fileSystemView.getSystemIcon(browser.getCurrentNode().getFile()));
-		//		JFrame frame = (JFrame) SwingUtilities.getRoot(ui);
-		//		frame.setIconImage(images);
+		//				List<Icon> images = new ArrayList<>();
+		//				images.add(browser.getCurrentNode().getIcon());
+		//				JFrame frame = (JFrame) SwingUtilities.getRoot(ui);
+		//				frame.setIconImages(browser.getCurrentNode().getIcon().getImage());
 
-		// update title
 		setTitle(node.getName());
-
-		// load data
-		//tree.setEnabled(false);
 		showProgressBar();
+
+		panelTable.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+		tableModel.setNodes(Collections.emptyList());
 
 		new SwingWorker<List<Node>, Void>()
 		{
@@ -519,43 +561,8 @@ public class Main
 			{
 				try
 				{
-					List<Node> data = get();
-
-					if (fileTableModel == null)
-					{
-						fileTableModel = new FileTableModel();
-						table.setModel(fileTableModel);
-					}
-
-					fileTableModel.setNodes(data);
-					if (!cellSizesSet)
-					{
-						//						table.setRowSorter(new TableRowSorter<TableModel>(table.getModel())
-						//						{
-						//							@Override
-						//							public boolean isSortable(int column)
-						//							{
-						//								return column > 1;
-						//							}
-						//						});
-
-						int iconSize = 16;//IconSizeHolder.get(data.isEmpty() ? null : data.get(0).getFile());
-
-						// size adjustment to better account for icons
-						table.setRowHeight(iconSize + ICON_PADDING);
-
-						setColumnWidth(0, iconSize + ICON_PADDING);
-						//						setColumnWidth(3, 60);
-						//						table.getColumnModel().getColumn(3).setMaxWidth(120);
-						//						setColumnWidth(4, -1);
-						//						setColumnWidth(5, -1);
-						//						setColumnWidth(6, -1);
-						//						setColumnWidth(7, -1);
-						//						setColumnWidth(8, -1);
-						//						setColumnWidth(9, -1);
-
-						cellSizesSet = true;
-					}
+					tableModel.setNodes(get());
+					setColumnWidth(table, 0, 16 + ICON_PADDING);
 				}
 				catch (InterruptedException | ExecutionException e)
 				{
@@ -564,13 +571,13 @@ public class Main
 				finally
 				{
 					hideProgressBar();
-					//tree.setEnabled(true);
+					panelTable.setCursor(Cursor.getDefaultCursor());
 				}
 			}
 		}.execute();
 	}
 
-	private void setColumnWidth(int column, int width)
+	private static void setColumnWidth(JTable table, int column, int width)
 	{
 		// FIXME
 		TableColumn tableColumn = table.getColumnModel().getColumn(column);
@@ -651,50 +658,13 @@ public class Main
 
 	public static void main(String[] args) throws IOException
 	{
-		//		Path fromZip = Paths.get("C:\\Data\\Дистрибутивы\\jprofiler_windows-x64_10_0_3.zip");
-		//		FileSystem zipFs = FileSystems.newFileSystem(fromZip, Main.class.getClassLoader());
-		//
-		//		for (Path root : zipFs.getRootDirectories())
-		//		{
-		//			Files.walkFileTree(root, new SimpleFileVisitor<Path>()
-		//			{
-		//				@Override
-		//				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
-		//				{
-		//					System.out.println("\tVISIT: " + file);
-		//					System.out.println("---> " + file);
-		//					return FileVisitResult.CONTINUE;
-		//				}
-		//
-		//				@Override
-		//				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
-		//				{
-		//					System.out.println("PRE: " + dir);
-		//
-		//					if (dir.getNameCount() > 0)
-		//					{
-		//						System.out.println("---> " + dir);
-		//						return FileVisitResult.SKIP_SUBTREE;
-		//					}
-		//					else
-		//					{
-		//						return FileVisitResult.CONTINUE;
-		//					}
-		//				}
-		//			});
-		//		}
-
-		SwingUtilities.invokeLater(new Runnable()
+		SwingUtilities.invokeLater(() ->
 		{
-			@Override
-			public void run()
-			{
-				Main app = new Main();
+			Main app = new Main();
 
-				app.buildUi();
-				app.initSystem();
-				app.showRootFile();
-			}
+			app.buildUi();
+			app.initSystem();
+			app.showRootFile();
 		});
 	}
 
@@ -713,6 +683,13 @@ public class Main
 		f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		f.setContentPane(buildRootPanel());
 
+		f.addWindowListener(new WindowAdapter()
+		{
+			public void windowClosing(WindowEvent event)
+			{
+				executorService.shutdownNow();
+			}
+		});
 		//		try
 		//		{
 		//			URL urlBig = getClass().getResource("fb-icon-32x32.png");
@@ -727,8 +704,8 @@ public class Main
 		//		}
 
 		f.pack();
-		f.setLocationByPlatform(true);
 		f.setMinimumSize(f.getSize());
+		f.setLocationByPlatform(true);
 		f.setVisible(true);
 	}
 
@@ -754,27 +731,21 @@ enum Column
 	{
 		return caption;
 	}
-
-	public static Column byIndex(int index)
-	{
-		return values()[index];
-	}
 }
 
-class FileTableModel extends AbstractTableModel
+class TableModel extends AbstractTableModel
 {
 	private static final Column[]         COLUMNS = { Column.ICON, Column.NAME, Column.SIZE, Column.TIME_MODIFIED };
 	private final        SimpleDateFormat FORMAT  = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
 	private List<Node> nodes;
-	private final FileSystemView fileSystemView = FileSystemView.getFileSystemView();
 
-	FileTableModel()
+	TableModel()
 	{
 		this(new ArrayList<Node>());
 	}
 
-	FileTableModel(List<Node> nodes)
+	TableModel(List<Node> nodes)
 	{
 		this.nodes = nodes;
 	}
@@ -801,17 +772,7 @@ class FileTableModel extends AbstractTableModel
 		{
 			case ICON:
 			{
-				File file;
-				if (item instanceof NodeFS)
-				{
-					file = ((NodeFS) item).getFile();
-				}
-				else
-				{
-					file = new File(item.getName());
-				}
-
-				return fileSystemView.getSystemIcon(file);
+				return item.getIcon();
 			}
 			case NAME:
 			{
@@ -864,8 +825,7 @@ class FileTableModel extends AbstractTableModel
 	@Override
 	public Class<?> getColumnClass(int column)
 	{
-		Column c = COLUMNS[column];
-		switch (c)
+		switch (COLUMNS[column])
 		{
 			case ICON:
 			{

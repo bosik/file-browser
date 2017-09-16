@@ -3,6 +3,9 @@ package org.bosik.filebrowser.dataProvider.file;
 import org.bosik.filebrowser.dataProvider.Node;
 import org.bosik.filebrowser.dataProvider.Util;
 
+import javax.swing.Icon;
+import javax.swing.UIManager;
+import javax.swing.filechooser.FileSystemView;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -20,6 +23,9 @@ import java.util.List;
  */
 public class NodeZipFolder implements Node
 {
+	// TODO: check thread-safety
+	private static final FileSystemView fileSystemView = FileSystemView.getFileSystemView();
+
 	private Path path;
 	private Path parentArchive;
 
@@ -88,5 +94,11 @@ public class NodeZipFolder implements Node
 		{
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public Icon getIcon()
+	{
+		return UIManager.getIcon("FileView.directoryIcon");
 	}
 }

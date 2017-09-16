@@ -1,5 +1,6 @@
 package org.bosik.filebrowser.dataProvider;
 
+import javax.swing.Icon;
 import java.util.List;
 
 /**
@@ -9,6 +10,8 @@ import java.util.List;
 public interface Node
 {
 	String getName();
+
+	Icon getIcon();
 
 	boolean isLeaf();
 
