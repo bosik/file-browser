@@ -1,8 +1,8 @@
-package org.bosik.filebrowser.dataProvider.ftp;
+package org.bosik.filebrowser.core.dataProvider.ftp;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
-import org.bosik.filebrowser.dataProvider.Node;
+import org.bosik.filebrowser.core.dataProvider.Node;
 
 import javax.swing.Icon;
 import javax.swing.UIManager;
@@ -18,9 +18,9 @@ import java.util.List;
  */
 public class NodeFtpFolder extends NodeFtpItem
 {
-	public NodeFtpFolder(NodeFtp ftpRoot, Node parent, Path path)
+	public NodeFtpFolder(NodeFtp ftpRoot, String parentPath, Path path)
 	{
-		super(ftpRoot, parent, path);
+		super(ftpRoot, parentPath, path);
 	}
 
 	@Override
@@ -30,7 +30,7 @@ public class NodeFtpFolder extends NodeFtpItem
 	}
 
 	@Override
-	protected List<Node> fetchChildren()
+	public List<Node> getChildren()
 	{
 		List<Node> children = new ArrayList<>();
 		try
@@ -42,13 +42,13 @@ public class NodeFtpFolder extends NodeFtpItem
 			FTPFile[] folders = client.listDirectories(currentPath);
 			for (FTPFile folder : folders)
 			{
-				children.add(new NodeFtpFolder(getFtpRoot(), this, Paths.get(getName()).resolve(folder.getName())));
+				children.add(new NodeFtpFolder(getFtpRoot(), getFullPath(), Paths.get(getName()).resolve(folder.getName())));
 			}
 
 			FTPFile[] files = client.listFiles(currentPath);
 			for (FTPFile file : files)
 			{
-				children.add(new NodeFtpFile(getFtpRoot(), this, Paths.get(getName()).resolve(file.getName())));
+				children.add(new NodeFtpFile(getFtpRoot(), getFullPath(), Paths.get(getName()).resolve(file.getName())));
 			}
 
 			return children;

@@ -1,8 +1,8 @@
-package org.bosik.filebrowser.dataProvider.file;
+package org.bosik.filebrowser.core.dataProvider.file;
 
-import org.bosik.filebrowser.dataProvider.Node;
-import org.bosik.filebrowser.dataProvider.Util;
-import org.bosik.filebrowser.dataProvider.zip.NodeZipArchive;
+import org.bosik.filebrowser.core.Util;
+import org.bosik.filebrowser.core.dataProvider.Node;
+import org.bosik.filebrowser.core.dataProvider.zip.NodeZipArchive;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
@@ -15,9 +15,9 @@ import java.util.List;
  */
 public class NodeFolder extends NodeFS
 {
-	public NodeFolder(Node parent, File file)
+	public NodeFolder(File file)
 	{
-		super(parent, file);
+		super(file);
 	}
 
 	@Override
@@ -27,7 +27,7 @@ public class NodeFolder extends NodeFS
 	}
 
 	@Override
-	public List<Node> fetchChildren()
+	public List<Node> getChildren()
 	{
 		System.out.println("Building children for " + getName() + "...");
 
@@ -35,7 +35,7 @@ public class NodeFolder extends NodeFS
 
 		try
 		{
-			Thread.sleep(1000);
+			Thread.sleep(500);
 		}
 		catch (InterruptedException e)
 		{
@@ -43,23 +43,22 @@ public class NodeFolder extends NodeFS
 			return children;
 		}
 
-		File[] files = FileSystemView.getFileSystemView().getFiles(getFile(), true);
+		File[] files = FileSystemView.getFileSystemView().getFiles(getFile(), false);
 		for (File file : files)
 		{
 			if (file.isDirectory())
 			{
-				children.add(new NodeFolder(this, file));
+				children.add(new NodeFolder(file));
 			}
 			else if (file.isFile())
 			{
-				String name = file.getName().toLowerCase();
-				if (name.endsWith(".zip") || name.endsWith(".jar") || name.endsWith(".war"))
+				if (Util.looksLikeArchive(file.getName()))
 				{
-					children.add(new NodeZipArchive(this, file));
+					children.add(new NodeZipArchive(file));
 				}
 				else
 				{
-					children.add(new NodeFile(this, file));
+					children.add(new NodeFile(file));
 				}
 			}
 			else

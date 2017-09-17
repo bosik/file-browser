@@ -1,4 +1,4 @@
-package org.bosik.filebrowser.dataProvider;
+package org.bosik.filebrowser.core.dataProvider;
 
 import javax.swing.Icon;
 import java.util.List;
@@ -15,7 +15,7 @@ public interface Node
 
 	Icon getIcon();
 
-	Node getParent();
+	String getParentPath();
 
 	boolean isLeaf();
 

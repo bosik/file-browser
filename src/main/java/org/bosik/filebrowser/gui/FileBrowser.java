@@ -1,4 +1,4 @@
-package org.bosik.filebrowser;
+package org.bosik.filebrowser.gui;
 
 import javax.swing.SwingUtilities;
 

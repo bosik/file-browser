@@ -1,8 +1,8 @@
-package org.bosik.filebrowser.dataProvider.zip;
+package org.bosik.filebrowser.core.dataProvider.zip;
 
-import org.bosik.filebrowser.dataProvider.Node;
-import org.bosik.filebrowser.dataProvider.Util;
-import org.bosik.filebrowser.dataProvider.file.NodeFS;
+import org.bosik.filebrowser.core.Util;
+import org.bosik.filebrowser.core.dataProvider.Node;
+import org.bosik.filebrowser.core.dataProvider.file.NodeFS;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,9 +22,9 @@ import java.util.List;
  */
 public class NodeZipArchive extends NodeFS
 {
-	public NodeZipArchive(Node parent, File file)
+	public NodeZipArchive(File file)
 	{
-		super(parent, file);
+		super(file);
 	}
 
 	@Override
@@ -34,7 +34,7 @@ public class NodeZipArchive extends NodeFS
 	}
 
 	@Override
-	public List<Node> fetchChildren()
+	public List<Node> getChildren()
 	{
 		final List<Node> children = new ArrayList<>();
 
@@ -50,7 +50,7 @@ public class NodeZipArchive extends NodeFS
 					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
 					{
 						// TODO: check file/inner archive
-						children.add(new NodeZipFile(NodeZipArchive.this, file, NodeZipArchive.this.getFile().toPath()));
+						children.add(new NodeZipFile(NodeZipArchive.this.getFullPath(), file, NodeZipArchive.this.getFile().toPath()));
 
 						return FileVisitResult.CONTINUE;
 					}
@@ -60,7 +60,7 @@ public class NodeZipArchive extends NodeFS
 					{
 						if (dir.getNameCount() > 0)
 						{
-							children.add(new NodeZipFolder(NodeZipArchive.this, dir, NodeZipArchive.this.getFile().toPath()));
+							children.add(new NodeZipFolder(NodeZipArchive.this.getFullPath(), dir, NodeZipArchive.this.getFile().toPath()));
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 						else

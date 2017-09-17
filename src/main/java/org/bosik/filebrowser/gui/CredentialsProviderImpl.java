@@ -1,4 +1,7 @@
-package org.bosik.filebrowser.dataProvider.ftp;
+package org.bosik.filebrowser.gui;
+
+import org.bosik.filebrowser.core.dataProvider.ftp.Credentials;
+import org.bosik.filebrowser.core.dataProvider.ftp.CredentialsProvider;
 
 import java.util.HashMap;
 import java.util.Map;

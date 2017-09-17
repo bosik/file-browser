@@ -1,4 +1,4 @@
-package org.bosik.filebrowser.dataProvider.ftp;
+package org.bosik.filebrowser.core.dataProvider.ftp;
 
 /**
  * @author Nikita Bosik

@@ -1,7 +1,7 @@
-package org.bosik.filebrowser.dataProvider.zip;
+package org.bosik.filebrowser.core.dataProvider.zip;
 
-import org.bosik.filebrowser.dataProvider.Node;
-import org.bosik.filebrowser.dataProvider.NodeAbstract;
+import org.bosik.filebrowser.core.Util;
+import org.bosik.filebrowser.core.dataProvider.NodeAbstract;
 
 import java.nio.file.Path;
 
@@ -14,9 +14,9 @@ public abstract class NodeZipItem extends NodeAbstract
 	private Path path;
 	private Path parentArchive;
 
-	public NodeZipItem(Node parent, Path path, Path parentArchive)
+	public NodeZipItem(String parentPath, Path path, Path parentArchive)
 	{
-		super(parent);
+		super(parentPath);
 		this.path = path;
 		this.parentArchive = parentArchive;
 	}
@@ -31,7 +31,7 @@ public abstract class NodeZipItem extends NodeAbstract
 	public String getFullPath()
 	{
 		// Path resolving doesn't work for file's path
-		return parentArchive.toString() + path.toString();
+		return Util.concatenatePath(parentArchive.toString(), path.toString());
 	}
 
 	public Path getPath()

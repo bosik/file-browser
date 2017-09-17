@@ -1,7 +1,6 @@
-package org.bosik.filebrowser.dataProvider.file;
+package org.bosik.filebrowser.core.dataProvider.file;
 
-import org.bosik.filebrowser.dataProvider.Node;
-import org.bosik.filebrowser.dataProvider.NodeAbstract;
+import org.bosik.filebrowser.core.dataProvider.NodeAbstract;
 
 import javax.swing.Icon;
 import javax.swing.filechooser.FileSystemView;
@@ -18,10 +17,21 @@ public abstract class NodeFS extends NodeAbstract
 
 	private File file;
 
-	public NodeFS(Node parent, File file)
+	public NodeFS(File file)
 	{
-		super(parent);
+		super(null);
 		this.file = file;
+	}
+
+	@Override
+	public String getParentPath()
+	{
+		//		if (super.getParentPath() != null)
+		//		{
+		//			return super.getParentPath();
+		//		}
+
+		return file != null ? file.getParent() : null;
 	}
 
 	public File getFile()
@@ -43,6 +53,7 @@ public abstract class NodeFS extends NodeAbstract
 			String path = file.getAbsolutePath();
 			// standard Windows folders have GUIDed names
 			return !path.contains("::") ? path : getName();
+			// return path;
 		}
 		else
 		{

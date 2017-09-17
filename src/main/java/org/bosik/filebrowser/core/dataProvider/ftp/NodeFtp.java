@@ -1,13 +1,14 @@
-package org.bosik.filebrowser.dataProvider.ftp;
+package org.bosik.filebrowser.core.dataProvider.ftp;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
-import org.bosik.filebrowser.dataProvider.Node;
-import org.bosik.filebrowser.dataProvider.NodeAbstract;
+import org.bosik.filebrowser.core.dataProvider.Node;
+import org.bosik.filebrowser.core.dataProvider.NodeAbstract;
 
 import javax.swing.Icon;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,25 +23,33 @@ public class NodeFtp extends NodeAbstract
 	private Credentials credentials;
 	private FTPClient   client;
 
-	public NodeFtp(Node parent, String url, Credentials credentials)
+	public NodeFtp(String url, Credentials credentials)
 	{
-		super(parent);
+		super(null);
 		this.url = url;
 		this.credentials = credentials;
 	}
 
-	public NodeFtp(Node parent, String url)
+	public NodeFtp(String url)
 	{
-		super(parent);
+		super(null);
 		this.url = url;
 		this.credentials = null;
 	}
 
-	public NodeFtp(Node parent, String url, CredentialsProvider credentialsProvider)
+	public NodeFtp(String url, CredentialsProvider credentialsProvider)
 	{
-		super(parent);
+		super(null);
 		this.url = url;
 		this.credentials = credentialsProvider.getCredentials(url);
+	}
+
+	@Override
+	public String getParentPath()
+	{
+		String stripedUrl = stripe(url);
+		Path path = Paths.get(stripedUrl);
+		return path.getParent().toString();
 	}
 
 	@Override
@@ -68,7 +77,7 @@ public class NodeFtp extends NodeAbstract
 	}
 
 	@Override
-	protected List<Node> fetchChildren()
+	public List<Node> getChildren()
 	{
 		List<Node> children = new ArrayList<>();
 		try
@@ -78,19 +87,20 @@ public class NodeFtp extends NodeAbstract
 			FTPFile[] folders = client.listDirectories();
 			for (FTPFile folder : folders)
 			{
-				children.add(new NodeFtpFolder(this, this, Paths.get(folder.getName())));
+				children.add(new NodeFtpFolder(this, getFullPath(), Paths.get(folder.getName())));
 			}
 
 			FTPFile[] files = client.listFiles();
 			for (FTPFile file : files)
 			{
-				children.add(new NodeFtpFile(this, this, Paths.get(file.getName())));
+				children.add(new NodeFtpFile(this, getFullPath(), Paths.get(file.getName())));
 			}
 
 			return children;
 		}
 		catch (IOException e)
 		{
+			// TODO: handle
 			e.printStackTrace();
 			return new ArrayList<>();
 		}

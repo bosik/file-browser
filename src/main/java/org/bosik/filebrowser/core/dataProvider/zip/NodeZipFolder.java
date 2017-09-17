@@ -1,7 +1,7 @@
-package org.bosik.filebrowser.dataProvider.zip;
+package org.bosik.filebrowser.core.dataProvider.zip;
 
-import org.bosik.filebrowser.dataProvider.Node;
-import org.bosik.filebrowser.dataProvider.Util;
+import org.bosik.filebrowser.core.Util;
+import org.bosik.filebrowser.core.dataProvider.Node;
 
 import javax.swing.Icon;
 import javax.swing.UIManager;
@@ -22,9 +22,9 @@ import java.util.List;
  */
 public class NodeZipFolder extends NodeZipItem
 {
-	public NodeZipFolder(Node parent, Path path, Path parentArchive)
+	public NodeZipFolder(String parentPath, Path path, Path parentArchive)
 	{
-		super(parent, path, parentArchive);
+		super(parentPath, path, parentArchive);
 	}
 
 	@Override
@@ -34,7 +34,7 @@ public class NodeZipFolder extends NodeZipItem
 	}
 
 	@Override
-	public List<Node> fetchChildren()
+	public List<Node> getChildren()
 	{
 		final List<Node> children = new ArrayList<>();
 
@@ -44,7 +44,8 @@ public class NodeZipFolder extends NodeZipItem
 
 			for (Path root : zipFs.getRootDirectories())
 			{
-				final Path path = root.resolve(getPath());
+				Path zipChildPath = zipFs.getPath(getPath().toString());
+				final Path path = root.resolve(zipChildPath);
 
 				Files.walkFileTree(path, new SimpleFileVisitor<Path>()
 				{
@@ -52,7 +53,7 @@ public class NodeZipFolder extends NodeZipItem
 					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
 					{
 						// TODO: check file/inner archive
-						children.add(new NodeZipFile(NodeZipFolder.this, file, getParentArchive()));
+						children.add(new NodeZipFile(NodeZipFolder.this.getFullPath(), file, getParentArchive()));
 
 						return FileVisitResult.CONTINUE;
 					}
@@ -62,7 +63,7 @@ public class NodeZipFolder extends NodeZipItem
 					{
 						if (dir.getNameCount() > path.getNameCount())
 						{
-							children.add(new NodeZipFolder(NodeZipFolder.this, dir, getParentArchive()));
+							children.add(new NodeZipFolder(NodeZipFolder.this.getFullPath(), dir, getParentArchive()));
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 						else

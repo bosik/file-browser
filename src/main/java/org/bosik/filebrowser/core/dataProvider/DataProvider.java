@@ -1,4 +1,4 @@
-package org.bosik.filebrowser.dataProvider;
+package org.bosik.filebrowser.core.dataProvider;
 
 /**
  * @author Nikita Bosik

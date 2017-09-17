@@ -1,6 +1,6 @@
-package org.bosik.filebrowser.dataProvider.file;
+package org.bosik.filebrowser.core.dataProvider.file;
 
-import org.bosik.filebrowser.dataProvider.Node;
+import org.bosik.filebrowser.core.dataProvider.Node;
 
 import java.io.File;
 import java.util.Collections;
@@ -12,9 +12,9 @@ import java.util.List;
  */
 public class NodeFile extends NodeFS
 {
-	public NodeFile(Node parent, File file)
+	public NodeFile(File file)
 	{
-		super(parent, file);
+		super(file);
 	}
 
 	@Override
@@ -24,7 +24,7 @@ public class NodeFile extends NodeFS
 	}
 
 	@Override
-	public List<Node> fetchChildren()
+	public List<Node> getChildren()
 	{
 		return Collections.emptyList();
 	}

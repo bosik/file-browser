@@ -1,6 +1,6 @@
-package org.bosik.filebrowser.dataProvider.ftp;
+package org.bosik.filebrowser.core.dataProvider.ftp;
 
-import org.bosik.filebrowser.dataProvider.Node;
+import org.bosik.filebrowser.core.dataProvider.Node;
 
 import javax.swing.Icon;
 import javax.swing.UIManager;
@@ -14,9 +14,9 @@ import java.util.List;
  */
 public class NodeFtpFile extends NodeFtpItem
 {
-	public NodeFtpFile(NodeFtp ftpRoot, Node parent, Path path)
+	public NodeFtpFile(NodeFtp ftpRoot, String parentPath, Path path)
 	{
-		super(ftpRoot, parent, path);
+		super(ftpRoot, parentPath, path);
 	}
 
 	@Override
@@ -26,7 +26,7 @@ public class NodeFtpFile extends NodeFtpItem
 	}
 
 	@Override
-	protected List<Node> fetchChildren()
+	public List<Node> getChildren()
 	{
 		return Collections.emptyList();
 	}

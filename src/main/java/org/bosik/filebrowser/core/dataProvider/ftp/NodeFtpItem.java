@@ -1,7 +1,7 @@
-package org.bosik.filebrowser.dataProvider.ftp;
+package org.bosik.filebrowser.core.dataProvider.ftp;
 
-import org.bosik.filebrowser.dataProvider.Node;
-import org.bosik.filebrowser.dataProvider.NodeAbstract;
+import org.bosik.filebrowser.core.Util;
+import org.bosik.filebrowser.core.dataProvider.NodeAbstract;
 
 import javax.swing.Icon;
 import java.nio.file.Path;
@@ -15,9 +15,9 @@ public abstract class NodeFtpItem extends NodeAbstract
 	private NodeFtp ftpRoot;
 	private Path    path;
 
-	public NodeFtpItem(NodeFtp ftpRoot, Node parent, Path path)
+	public NodeFtpItem(NodeFtp ftpRoot, String parentPath, Path path)
 	{
-		super(parent);
+		super(parentPath);
 		this.ftpRoot = ftpRoot;
 		this.path = path;
 	}
@@ -31,19 +31,7 @@ public abstract class NodeFtpItem extends NodeAbstract
 	@Override
 	public String getFullPath()
 	{
-		String parent = ftpRoot.getFullPath();
-		while (parent.endsWith("/") || parent.endsWith("\\"))
-		{
-			parent = parent.substring(0, parent.length() - 1);
-		}
-
-		String next = path.toString();
-		while (next.startsWith("/") || next.startsWith("\\"))
-		{
-			next = next.substring(1);
-		}
-
-		return parent + "/" + next;
+		return Util.concatenatePath(ftpRoot.getFullPath(), path.toString());
 	}
 
 	@Override

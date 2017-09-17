@@ -1,6 +1,6 @@
-package org.bosik.filebrowser.dataProvider.zip;
+package org.bosik.filebrowser.core.dataProvider.zip;
 
-import org.bosik.filebrowser.dataProvider.Node;
+import org.bosik.filebrowser.core.dataProvider.Node;
 
 import javax.swing.Icon;
 import javax.swing.UIManager;
@@ -14,9 +14,9 @@ import java.util.List;
  */
 public class NodeZipFile extends NodeZipItem
 {
-	public NodeZipFile(Node parent, Path path, Path parentArchive)
+	public NodeZipFile(String parentPath, Path path, Path parentArchive)
 	{
-		super(parent, path, parentArchive);
+		super(parentPath, path, parentArchive);
 	}
 
 	@Override
@@ -26,7 +26,7 @@ public class NodeZipFile extends NodeZipItem
 	}
 
 	@Override
-	public List<Node> fetchChildren()
+	public List<Node> getChildren()
 	{
 		return Collections.emptyList();
 	}
