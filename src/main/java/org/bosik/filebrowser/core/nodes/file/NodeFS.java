@@ -1,10 +1,13 @@
 package org.bosik.filebrowser.core.nodes.file;
 
+import org.bosik.filebrowser.core.nodes.Node;
 import org.bosik.filebrowser.core.nodes.NodeAbstract;
 
 import javax.swing.Icon;
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Nikita Bosik
@@ -12,10 +15,7 @@ import java.io.File;
  */
 public abstract class NodeFS extends NodeAbstract
 {
-	// TODO: check thread-safety
-	private static final FileSystemView fileSystemView = FileSystemView.getFileSystemView();
-
-	private File file;
+	private final File file;
 
 	public NodeFS(File file)
 	{
@@ -26,12 +26,7 @@ public abstract class NodeFS extends NodeAbstract
 	@Override
 	public String getParentPath()
 	{
-		//		if (super.getParentPath() != null)
-		//		{
-		//			return super.getParentPath();
-		//		}
-
-		return file != null ? file.getParent() : null;
+		return (file != null) ? file.getParent() : null;
 	}
 
 	public File getFile()
@@ -42,7 +37,7 @@ public abstract class NodeFS extends NodeAbstract
 	@Override
 	public String getName()
 	{
-		return file != null ? fileSystemView.getSystemDisplayName(file) : null;
+		return (file != null) ? FileSystemView.getFileSystemView().getSystemDisplayName(file) : null;
 	}
 
 	@Override
@@ -53,7 +48,6 @@ public abstract class NodeFS extends NodeAbstract
 			String path = file.getAbsolutePath();
 			// standard Windows folders have GUIDed names
 			return !path.contains("::") ? path : getName();
-			// return path;
 		}
 		else
 		{
@@ -64,6 +58,38 @@ public abstract class NodeFS extends NodeAbstract
 	@Override
 	public Icon getIcon()
 	{
-		return (file != null) ? fileSystemView.getSystemIcon(file) : null;
+		return (file != null) ? FileSystemView.getFileSystemView().getSystemIcon(file) : null;
+	}
+
+	/**
+	 * Builds root node
+	 *
+	 * @return Root node
+	 */
+	public static Node getRootNode()
+	{
+		// FIXME: move this method
+
+		return new NodeFolder(null)
+		{
+			@Override
+			public String getName()
+			{
+				return "(root)";
+			}
+
+			@Override
+			public List<Node> getChildren()
+			{
+				List<Node> children = new ArrayList<>();
+
+				for (File file : FileSystemView.getFileSystemView().getRoots())
+				{
+					children.add(new NodeFolder(file));
+				}
+
+				return children;
+			}
+		};
 	}
 }

@@ -33,17 +33,18 @@ public class NodeFolder extends NodeFS
 
 		List<Node> children = new ArrayList<>();
 
-		try
-		{
-			Thread.sleep(500);
-		}
-		catch (InterruptedException e)
-		{
-			e.printStackTrace();
-			return children;
-		}
+		//		try
+		//		{
+		//			Thread.sleep(500);
+		//		}
+		//		catch (InterruptedException e)
+		//		{
+		//			e.printStackTrace();
+		//			return children;
+		//		}
 
 		File[] files = FileSystemView.getFileSystemView().getFiles(getFile(), false);
+
 		for (File file : files)
 		{
 			if (file.isDirectory())
@@ -64,12 +65,11 @@ public class NodeFolder extends NodeFS
 			else
 			{
 				// TODO: think
-				System.out.println("Unknown item type found: " + file.getName());
+				System.err.println("Unknown item type found: " + file.getName());
 			}
 		}
 
 		System.out.println("Building children for " + getName() + " finished");
-
 		return Util.sort(children);
 	}
 }

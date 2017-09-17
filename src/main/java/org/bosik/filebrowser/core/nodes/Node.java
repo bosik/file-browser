@@ -19,5 +19,8 @@ public interface Node
 
 	boolean isLeaf();
 
+	/**
+	 * @return List of children nodes, never {@code null}
+	 */
 	List<Node> getChildren();
 }

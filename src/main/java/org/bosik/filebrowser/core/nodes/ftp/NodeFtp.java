@@ -119,7 +119,6 @@ public class NodeFtp extends NodeAbstract
 	private FTPClient buildFtpClient() throws IOException
 	{
 		// TODO: port support
-		// TODO: remove debug System.out.println()
 
 		FTPClient client = new FTPClient();
 		client.setControlEncoding("UTF-8"); // before connect!
@@ -127,7 +126,6 @@ public class NodeFtp extends NodeAbstract
 		String urlServer = address[0];
 		String urlPath = address[1];
 		client.connect(urlServer);
-		System.out.print(client.getReplyString());
 		if (!client.isConnected())
 		{
 			throw new RuntimeException("Failed to connect to " + url);
@@ -136,7 +134,6 @@ public class NodeFtp extends NodeAbstract
 		client.enterLocalPassiveMode();
 
 		boolean isLoggedIn = credentials != null ? client.login(credentials.getUserName(), credentials.getPassword()) : true;
-		System.out.print(client.getReplyString());
 		if (!isLoggedIn)
 		{
 			// TODO: handle
@@ -144,9 +141,7 @@ public class NodeFtp extends NodeAbstract
 		}
 
 		client.changeWorkingDirectory(urlPath);
-
 		client.setFileType(FTP.BINARY_FILE_TYPE);
-		System.out.print(client.getReplyString());
 
 		return client;
 	}

@@ -1,17 +1,16 @@
 package org.bosik.filebrowser.core.browser;
 
-import org.bosik.filebrowser.core.Util;
+import org.bosik.filebrowser.core.browser.exceptions.PathException;
+import org.bosik.filebrowser.core.browser.exceptions.PathNotFoundException;
+import org.bosik.filebrowser.core.browser.resolvers.PathResolver;
+import org.bosik.filebrowser.core.browser.resolvers.ResolverFS;
+import org.bosik.filebrowser.core.browser.resolvers.ResolverFTP;
+import org.bosik.filebrowser.core.browser.resolvers.ResolverRoot;
+import org.bosik.filebrowser.core.browser.resolvers.ResolverSpecialWindows;
+import org.bosik.filebrowser.core.browser.resolvers.ResolverZip;
 import org.bosik.filebrowser.core.nodes.Node;
-import org.bosik.filebrowser.core.nodes.file.NodeFolder;
-import org.bosik.filebrowser.core.nodes.ftp.NodeFtp;
-import org.bosik.filebrowser.core.nodes.zip.NodeZipArchive;
-import org.bosik.filebrowser.core.nodes.zip.NodeZipFolder;
 import org.bosik.filebrowser.gui.CredentialsProviderImpl;
 
-import javax.swing.filechooser.FileSystemView;
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,206 +18,122 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * Core navigation component. Methods are marked as fast/slow:
+ * <ul>
+ * <li><b>Fast</b> methods are ok to be called from UI</li>
+ * <li><b>Slow</b> methods may be time-consuming and should be called in a separate thread</li>
+ * </ul>
+ *
  * @author Nikita Bosik
  * @since 2017-09-12
  */
 public class TreeBrowser
 {
 	private final Map<String, List<Node>> childrenCache = new ConcurrentHashMap<>();
-	private Map<String, Node> specialFolders;
+	private final List<PathResolver>      resolvers     = new ArrayList<PathResolver>()
+	{
+		{
+			add(new ResolverRoot()); // must be first
+			add(new ResolverFS());
+			add(new ResolverFTP(new CredentialsProviderImpl())); // FIXME
+			add(new ResolverSpecialWindows());
+			add(new ResolverZip());
+		}
+	};
 
-	// slow
-	public List<Node> getChildren(String path) throws PathNotFoundException
+	/**
+	 * <i>Slow</i>. Fetch node for specified path
+	 *
+	 * @param path Path to navigate to
+	 * @return Never {@code null}
+	 * @throws PathException If path is invalid or missing
+	 */
+	public Node getNode(String path) throws PathException
+	{
+		for (PathResolver resolver : resolvers)
+		{
+			Node node = resolver.resolve(path);
+			if (node != null)
+			{
+				return node;
+			}
+		}
+
+		throw new PathNotFoundException(path);
+	}
+
+	/**
+	 * <i>Slow</i>. Fetch children nodes for specified node. Requests are cached.
+	 *
+	 * @param node Parent node
+	 * @return List of children items, never {@code null}
+	 * @see TreeBrowser#resetCache(String)
+	 * @see TreeBrowser#resetCache(Node)
+	 * @see TreeBrowser#resetCache()
+	 */
+	public List<Node> getChildren(Node node)
+	{
+		Objects.requireNonNull(node, "Node is null");
+		return childrenCache.computeIfAbsent(getKey(node), key -> node.getChildren());
+
+		//		try
+		//		{
+		//			Thread.sleep(1000);
+		//		}
+		//		catch (InterruptedException e)
+		//		{
+		//			System.err.println("Loading " + node.getName() + " interrupted");
+		//			return Collections.emptyList();
+		//		}
+
+		// return node.getChildren(); // FIXME
+	}
+
+	/**
+	 * <i>Slow</i>. Fetch children nodes for specified path
+	 *
+	 * @param path Path to resolve
+	 * @return List of children
+	 * @throws PathException If path is invalid or missing
+	 */
+	public List<Node> getChildren(String path) throws PathException
 	{
 		return getChildren(getNode(path));
 	}
 
-	// slow
-	public List<Node> getChildren(Node node)
-	{
-		Objects.requireNonNull(node, "Node is null");
-
-		return childrenCache.computeIfAbsent(getKey(node), key -> node.getChildren());
-		//		return node.getChildren();
-	}
-
-	// fast
-
 	/**
-	 * Reset cache for specified path and all sub-paths recursively
+	 * <i>Fast</i>. Reset cache for specified path and all sub-paths recursively
 	 *
-	 * @param path
+	 * @param path Path
 	 */
 	public void resetCache(String path)
 	{
 		Objects.requireNonNull(path, "Path is null");
-
 		childrenCache.keySet().removeIf(key -> key.startsWith(path));
 	}
 
-	// fast
-
 	/**
-	 * Reset cache for the node and all it's children recursively
+	 * <i>Fast</i>. Reset cache for the node and all it's children recursively
 	 *
-	 * @param node
+	 * @param node Node
 	 */
 	public void resetCache(Node node)
 	{
 		Objects.requireNonNull(node, "Node is null");
-
 		resetCache(getKey(node));
 	}
 
-	// fast
+	/**
+	 * <i>Fast</i>. Resets cache completely
+	 */
 	public void resetCache()
 	{
 		childrenCache.clear();
-	}
-
-	// slow
-
-	/**
-	 * @param url
-	 * @return Never {@code null}
-	 * @throws PathNotFoundException
-	 */
-	public Node getNode(String url) throws PathNotFoundException
-	{
-		if (url == null || url.isEmpty())
-		{
-			return getRootNode();
-		}
-
-		// ==== FTP ===========================================
-
-		if (url.startsWith("ftp://"))
-		{
-			// TODO: extract credentials provider
-			return new NodeFtp(url, new CredentialsProviderImpl());
-		}
-
-		// ==== Normal/network file/directory ===========================================
-
-		File file = new File(url);
-		if (file.exists())
-		{
-			if (Util.looksLikeArchive(file.getName()))
-			{
-				return new NodeZipArchive(file);
-			}
-			else
-			{
-				return new NodeFolder(file);
-			}
-		}
-
-		// ==== Special Windows folders (like Computer, Network, etc.) ===========================================
-
-		prepareSpecialFolders();
-		if (specialFolders.containsKey(url))
-		{
-			return specialFolders.get(url);
-		}
-
-		// ==== Zip archives ===========================================
-
-		Path path = Paths.get(url);
-		List<Integer> indexZips = new ArrayList<>();
-		for (int i = 0; i < path.getNameCount(); i++)
-		{
-			// NOTE: there also can be a normal folder named "folder.zip"
-			String item = path.getName(i).toString().toLowerCase();
-			if (Util.looksLikeArchive(item))
-			{
-				indexZips.add(i);
-			}
-		}
-
-		if (indexZips.size() > 0)
-		{
-			List<Integer> archiveIndexes = new ArrayList<>();
-			for (int i : indexZips)
-			{
-				Path sub = path.getRoot().resolve(path.subpath(0, i + 1));
-				if (sub.toFile().isFile())
-				{
-					archiveIndexes.add(i);
-				}
-			}
-
-			if (archiveIndexes.size() == 0)
-			{
-				// no archives, but missing file - throw an error
-				throw new PathNotFoundException(url);
-			}
-
-			if (archiveIndexes.size() > 1)
-			{
-				// nested archives are not supported
-				throw new PathNotFoundException(url);
-			}
-
-			String zipParentPath = path.getParent().toString();
-			Path zipParentArchive = path.getRoot().resolve(path.subpath(0, archiveIndexes.get(0) + 1));
-			Path zipPath = zipParentArchive.relativize(path);
-			return new NodeZipFolder(zipParentPath, zipPath, zipParentArchive);
-		}
-
-		throw new PathNotFoundException(url);
-	}
-
-	// fast
-	public Node getRootNode()
-	{
-		return new NodeFolder(null)
-		{
-			@Override
-			public String getName()
-			{
-				return "(root)";
-			}
-
-			@Override
-			public List<Node> getChildren()
-			{
-				List<Node> children = new ArrayList<>();
-
-				for (File file : FileSystemView.getFileSystemView().getRoots())
-				{
-					children.add(new NodeFolder(file));
-				}
-
-				return children;
-			}
-		};
 	}
 
 	private static String getKey(Node node)
 	{
 		String path = node.getFullPath();
 		return (path != null) ? path : "";
-	}
-
-	/**
-	 * Scans root & sub-root levels to remember special Windows folders
-	 */
-	private void prepareSpecialFolders()
-	{
-		if (specialFolders == null)
-		{
-			Map<String, Node> map = new ConcurrentHashMap<>();
-
-			for (Node node : getRootNode().getChildren())
-			{
-				map.put(node.getName(), node);
-				for (Node subNode : node.getChildren())
-				{
-					map.put(subNode.getName(), subNode);
-				}
-			}
-
-			specialFolders = map;
-		}
 	}
 }

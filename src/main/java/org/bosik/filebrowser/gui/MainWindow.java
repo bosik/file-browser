@@ -1,7 +1,7 @@
 package org.bosik.filebrowser.gui;
 
-import org.bosik.filebrowser.core.browser.PathNotFoundException;
 import org.bosik.filebrowser.core.browser.TreeBrowser;
+import org.bosik.filebrowser.core.browser.exceptions.PathException;
 import org.bosik.filebrowser.core.nodes.Node;
 import org.bosik.filebrowser.core.nodes.file.NodeFS;
 
@@ -63,6 +63,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * @author Nikita Bosik
@@ -515,15 +516,16 @@ public class MainWindow extends JFrame
 				if (node instanceof NodeFS)
 				{
 					File file = ((NodeFS) node).getFile();
-					executorService.submit(() ->
+					submitTask(() ->
 					{
 						try
 						{
 							Desktop.getDesktop().open(file);
 						}
-						catch (IOException t)
+						catch (IOException e)
 						{
-							handleError(t);
+							// TODO: handle
+							e.printStackTrace();
 						}
 					});
 				}
@@ -575,7 +577,7 @@ public class MainWindow extends JFrame
 
 	private void showRootFile()
 	{
-		currentNode = browser.getRootNode();
+		currentNode = NodeFS.getRootNode();
 		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(currentNode);
 		tree.setModel(new DefaultTreeModel(rootNode));
 		refreshChildren(rootNode, true);
@@ -588,7 +590,7 @@ public class MainWindow extends JFrame
 		item.add(new DefaultMutableTreeNode(null));
 		tree.repaint();
 
-		executorService.submit(() ->
+		submitTask(() ->
 		{
 			// calculate children
 
@@ -640,15 +642,7 @@ public class MainWindow extends JFrame
 		String parentPath = currentNode.getParentPath();
 		if (parentPath != null)
 		{
-			try
-			{
-				showFiles(browser.getNode(parentPath));
-			}
-			catch (PathNotFoundException e)
-			{
-				e.printStackTrace();
-				// TODO: handle
-			}
+			showFiles(parentPath);
 		}
 	}
 
@@ -661,55 +655,103 @@ public class MainWindow extends JFrame
 		}
 	}
 
-	private void showFiles(final String path)
+	class View
+	{
+		Node       node;
+		List<Node> children;
+
+		View(Node node, List<Node> children)
+		{
+			this.node = node;
+			this.children = children;
+		}
+	}
+
+	private Future<?> futureShowFiles;
+
+	private void showFiles(String path)
 	{
 		showProgressBar();
 		textAddress.setText(path != null ? path : "");
 		panelTable.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		tableModel.setNodes(Collections.emptyList());
 
-		executorService.submit(() ->
+		//		if (futureShowFiles != null)
+		//		{
+		//			futureShowFiles.cancel(true);
+		//		}
+
+		futureShowFiles = executorService.submit(() ->
 		{
-			Node node;
-			List<Node> nodes;
 			try
 			{
-				node = browser.getNode(path);
-				nodes = browser.getChildren(node);
-			}
-			catch (PathNotFoundException e)
-			{
-				node = null;
-				nodes = Collections.emptyList();
-			}
+				View output;
 
-			final Node finalNode = node;
-			final List<Node> finalNodes = nodes;
-
-			SwingUtilities.invokeLater(() ->
-			{
 				try
 				{
-					if (finalNode != null)
-					{
-						currentNode = finalNode;
-						MainWindow.this.setTitle(currentNode.getName() + APP_TITLE);
-						tableModel.setNodes(finalNodes);
-						setColumnWidth(table, 0, 16 + ICON_PADDING);
-					}
-					else
-					{
-						// TODO: handle
-						System.err.println("Can't open " + path);
-						tableModel.setNodes(Collections.emptyList());
-					}
+					Node node = browser.getNode(path);
+					List<Node> nodes = browser.getChildren(node);
+					output = new View(node, nodes);
 				}
-				finally
+				catch (PathException e)
 				{
-					MainWindow.this.hideProgressBar();
-					panelTable.setCursor(Cursor.getDefaultCursor());
+					output = new View(null, Collections.emptyList());
 				}
-			});
+
+				final View finalOutput = output;
+
+				SwingUtilities.invokeLater(() ->
+				{
+					try
+					{
+						if (finalOutput.node != null)
+						{
+							currentNode = finalOutput.node;
+							this.setTitle(currentNode.getName() + APP_TITLE);
+							tableModel.setNodes(finalOutput.children);
+							setColumnWidth(table, 0, 16 + ICON_PADDING);
+						}
+						else
+						{
+							System.err.println("Path not found: " + path);
+							this.showErrorMessage("Error", "Path not found: " + path);
+							tableModel.setNodes(Collections.emptyList());
+						}
+					}
+					finally
+					{
+						this.hideProgressBar();
+						panelTable.setCursor(Cursor.getDefaultCursor());
+					}
+				});
+			}
+			catch (Exception e)
+			{
+				SwingUtilities.invokeLater(() ->
+				{
+					this.hideProgressBar();
+					panelTable.setCursor(Cursor.getDefaultCursor());
+					this.handleError(e);
+				});
+			}
+		});
+	}
+
+	private void submitTask(Runnable task)
+	{
+		executorService.submit(() ->
+		{
+			try
+			{
+				task.run();
+			}
+			catch (Exception e)
+			{
+				SwingUtilities.invokeLater(() ->
+				{
+					handleError(e);
+				});
+			}
 		});
 	}
 
@@ -915,4 +957,5 @@ public class MainWindow extends JFrame
 		showErrorMessage("Error", e.getMessage());
 		ui.repaint();
 	}
+
 }
