@@ -1,8 +1,8 @@
-package org.bosik.filebrowser.core.dataProvider.ftp;
+package org.bosik.filebrowser.core.nodes.ftp;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
-import org.bosik.filebrowser.core.dataProvider.Node;
+import org.bosik.filebrowser.core.nodes.Node;
 
 import javax.swing.Icon;
 import javax.swing.UIManager;

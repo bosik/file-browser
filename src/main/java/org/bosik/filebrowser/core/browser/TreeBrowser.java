@@ -1,10 +1,11 @@
-package org.bosik.filebrowser.core;
+package org.bosik.filebrowser.core.browser;
 
-import org.bosik.filebrowser.core.dataProvider.Node;
-import org.bosik.filebrowser.core.dataProvider.file.NodeFolder;
-import org.bosik.filebrowser.core.dataProvider.ftp.NodeFtp;
-import org.bosik.filebrowser.core.dataProvider.zip.NodeZipArchive;
-import org.bosik.filebrowser.core.dataProvider.zip.NodeZipFolder;
+import org.bosik.filebrowser.core.Util;
+import org.bosik.filebrowser.core.nodes.Node;
+import org.bosik.filebrowser.core.nodes.file.NodeFolder;
+import org.bosik.filebrowser.core.nodes.ftp.NodeFtp;
+import org.bosik.filebrowser.core.nodes.zip.NodeZipArchive;
+import org.bosik.filebrowser.core.nodes.zip.NodeZipFolder;
 import org.bosik.filebrowser.gui.CredentialsProviderImpl;
 
 import javax.swing.filechooser.FileSystemView;
@@ -90,12 +91,15 @@ public class TreeBrowser
 		}
 
 		// ==== FTP ===========================================
+
 		if (url.startsWith("ftp://"))
 		{
+			// TODO: extract credentials provider
 			return new NodeFtp(url, new CredentialsProviderImpl());
 		}
 
 		// ==== Normal/network file/directory ===========================================
+
 		File file = new File(url);
 		if (file.exists())
 		{
@@ -110,6 +114,7 @@ public class TreeBrowser
 		}
 
 		// ==== Special Windows folders (like Computer, Network, etc.) ===========================================
+
 		prepareSpecialFolders();
 		if (specialFolders.containsKey(url))
 		{
@@ -154,10 +159,10 @@ public class TreeBrowser
 				throw new PathNotFoundException(url);
 			}
 
-			Path _parentArchive = path.getRoot().resolve(path.subpath(0, archiveIndexes.get(0) + 1));
-			Path _path = _parentArchive.relativize(path);
-			String _parentPath = path.getParent().toString();
-			return new NodeZipFolder(_parentPath, _path, _parentArchive);
+			String zipParentPath = path.getParent().toString();
+			Path zipParentArchive = path.getRoot().resolve(path.subpath(0, archiveIndexes.get(0) + 1));
+			Path zipPath = zipParentArchive.relativize(path);
+			return new NodeZipFolder(zipParentPath, zipPath, zipParentArchive);
 		}
 
 		throw new PathNotFoundException(url);

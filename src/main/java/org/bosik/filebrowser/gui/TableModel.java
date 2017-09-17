@@ -1,7 +1,7 @@
 package org.bosik.filebrowser.gui;
 
-import org.bosik.filebrowser.core.dataProvider.Node;
-import org.bosik.filebrowser.core.dataProvider.file.NodeFS;
+import org.bosik.filebrowser.core.nodes.Node;
+import org.bosik.filebrowser.core.nodes.file.NodeFS;
 
 import javax.swing.ImageIcon;
 import javax.swing.table.AbstractTableModel;

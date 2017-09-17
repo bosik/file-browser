@@ -1,6 +1,6 @@
 package org.bosik.filebrowser.core;
 
-import org.bosik.filebrowser.core.dataProvider.Node;
+import org.bosik.filebrowser.core.nodes.Node;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +41,13 @@ public class Util
 		return result;
 	}
 
+	/**
+	 * Concatenate two strings making sure there is exactly one slash between them
+	 *
+	 * @param parent
+	 * @param child
+	 * @return
+	 */
 	public static String concatenatePath(String parent, String child)
 	{
 		while (parent.endsWith("/") || parent.endsWith("\\"))

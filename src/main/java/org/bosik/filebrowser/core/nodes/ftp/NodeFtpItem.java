@@ -1,7 +1,7 @@
-package org.bosik.filebrowser.core.dataProvider.ftp;
+package org.bosik.filebrowser.core.nodes.ftp;
 
 import org.bosik.filebrowser.core.Util;
-import org.bosik.filebrowser.core.dataProvider.NodeAbstract;
+import org.bosik.filebrowser.core.nodes.NodeAbstract;
 
 import javax.swing.Icon;
 import java.nio.file.Path;

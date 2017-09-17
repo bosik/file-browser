@@ -1,4 +1,4 @@
-package org.bosik.filebrowser.core.dataProvider;
+package org.bosik.filebrowser.core.nodes;
 
 import javax.swing.Icon;
 import java.util.List;
@@ -11,9 +11,9 @@ public interface Node
 {
 	String getName();
 
-	String getFullPath();
-
 	Icon getIcon();
+
+	String getFullPath();
 
 	String getParentPath();
 

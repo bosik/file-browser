@@ -1,10 +1,10 @@
-package org.bosik.filebrowser.core.dataProvider.ftp;
+package org.bosik.filebrowser.core.nodes.ftp;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
-import org.bosik.filebrowser.core.dataProvider.Node;
-import org.bosik.filebrowser.core.dataProvider.NodeAbstract;
+import org.bosik.filebrowser.core.nodes.Node;
+import org.bosik.filebrowser.core.nodes.NodeAbstract;
 
 import javax.swing.Icon;
 import java.io.IOException;
@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Nikita Bosik
@@ -26,22 +27,21 @@ public class NodeFtp extends NodeAbstract
 	public NodeFtp(String url, Credentials credentials)
 	{
 		super(null);
+
+		Objects.requireNonNull(url, "URL is null");
+
 		this.url = url;
 		this.credentials = credentials;
 	}
 
 	public NodeFtp(String url)
 	{
-		super(null);
-		this.url = url;
-		this.credentials = null;
+		this(url, (Credentials) null);
 	}
 
 	public NodeFtp(String url, CredentialsProvider credentialsProvider)
 	{
-		super(null);
-		this.url = url;
-		this.credentials = credentialsProvider.getCredentials(url);
+		this(url, credentialsProvider.getCredentials(url));
 	}
 
 	@Override
@@ -49,7 +49,7 @@ public class NodeFtp extends NodeAbstract
 	{
 		String stripedUrl = stripe(url);
 		Path path = Paths.get(stripedUrl);
-		return path.getParent().toString();
+		return "ftp://" + path.getParent().toString();
 	}
 
 	@Override
@@ -123,7 +123,10 @@ public class NodeFtp extends NodeAbstract
 
 		FTPClient client = new FTPClient();
 		client.setControlEncoding("UTF-8"); // before connect!
-		client.connect(stripe(url));
+		String[] address = getServerAndPath(url);
+		String urlServer = address[0];
+		String urlPath = address[1];
+		client.connect(urlServer);
 		System.out.print(client.getReplyString());
 		if (!client.isConnected())
 		{
@@ -140,13 +143,15 @@ public class NodeFtp extends NodeAbstract
 			throw new RuntimeException("Failed to login to " + url + " as " + credentials.getUserName());
 		}
 
+		client.changeWorkingDirectory(urlPath);
+
 		client.setFileType(FTP.BINARY_FILE_TYPE);
 		System.out.print(client.getReplyString());
 
 		return client;
 	}
 
-	private String stripe(String url)
+	private static String stripe(String url)
 	{
 		if (url == null)
 		{
@@ -164,5 +169,29 @@ public class NodeFtp extends NodeAbstract
 		}
 
 		return url;
+	}
+
+	private static String[] getServerAndPath(String url)
+	{
+		String server = url;
+		String path = "";
+
+		if (server != null)
+		{
+			if (server.startsWith("ftp://"))
+			{
+				server = server.substring(6);
+			}
+
+			server.replace('\\', '/');
+			int k = server.indexOf('/');
+			if (k > -1)
+			{
+				path = server.substring(k + 1);
+				server = server.substring(0, k);
+			}
+		}
+
+		return new String[] { server, path };
 	}
 }

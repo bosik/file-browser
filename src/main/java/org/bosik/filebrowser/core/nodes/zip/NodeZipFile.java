@@ -1,6 +1,6 @@
-package org.bosik.filebrowser.core.dataProvider.ftp;
+package org.bosik.filebrowser.core.nodes.zip;
 
-import org.bosik.filebrowser.core.dataProvider.Node;
+import org.bosik.filebrowser.core.nodes.Node;
 
 import javax.swing.Icon;
 import javax.swing.UIManager;
@@ -10,13 +10,13 @@ import java.util.List;
 
 /**
  * @author Nikita Bosik
- * @since 2017-09-14
+ * @since 2017-09-03
  */
-public class NodeFtpFile extends NodeFtpItem
+public class NodeZipFile extends NodeZipItem
 {
-	public NodeFtpFile(NodeFtp ftpRoot, String parentPath, Path path)
+	public NodeZipFile(String parentPath, Path path, Path parentArchive)
 	{
-		super(ftpRoot, parentPath, path);
+		super(parentPath, path, parentArchive);
 	}
 
 	@Override

@@ -1,6 +1,6 @@
-package org.bosik.filebrowser.core.dataProvider.file;
+package org.bosik.filebrowser.core.nodes.file;
 
-import org.bosik.filebrowser.core.dataProvider.NodeAbstract;
+import org.bosik.filebrowser.core.nodes.NodeAbstract;
 
 import javax.swing.Icon;
 import javax.swing.filechooser.FileSystemView;

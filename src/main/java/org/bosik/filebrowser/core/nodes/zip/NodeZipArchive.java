@@ -1,10 +1,10 @@
-package org.bosik.filebrowser.core.dataProvider.zip;
+package org.bosik.filebrowser.core.nodes.zip;
 
 import org.bosik.filebrowser.core.Util;
-import org.bosik.filebrowser.core.dataProvider.Node;
+import org.bosik.filebrowser.core.nodes.Node;
+import org.bosik.filebrowser.core.nodes.file.NodeFS;
 
-import javax.swing.Icon;
-import javax.swing.UIManager;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -20,11 +20,11 @@ import java.util.List;
  * @author Nikita Bosik
  * @since 2017-09-03
  */
-public class NodeZipFolder extends NodeZipItem
+public class NodeZipArchive extends NodeFS
 {
-	public NodeZipFolder(String parentPath, Path path, Path parentArchive)
+	public NodeZipArchive(File file)
 	{
-		super(parentPath, path, parentArchive);
+		super(file);
 	}
 
 	@Override
@@ -40,20 +40,17 @@ public class NodeZipFolder extends NodeZipItem
 
 		try
 		{
-			FileSystem zipFs = FileSystems.newFileSystem(getParentArchive(), NodeZipFolder.class.getClassLoader());
+			FileSystem zipFs = FileSystems.newFileSystem(getFile().toPath(), NodeZipArchive.class.getClassLoader());
 
 			for (Path root : zipFs.getRootDirectories())
 			{
-				Path zipChildPath = zipFs.getPath(getPath().toString());
-				final Path path = root.resolve(zipChildPath);
-
-				Files.walkFileTree(path, new SimpleFileVisitor<Path>()
+				Files.walkFileTree(root, new SimpleFileVisitor<Path>()
 				{
 					@Override
 					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
 					{
 						// TODO: check file/inner archive
-						children.add(new NodeZipFile(NodeZipFolder.this.getFullPath(), file, getParentArchive()));
+						children.add(new NodeZipFile(NodeZipArchive.this.getFullPath(), file, NodeZipArchive.this.getFile().toPath()));
 
 						return FileVisitResult.CONTINUE;
 					}
@@ -61,9 +58,9 @@ public class NodeZipFolder extends NodeZipItem
 					@Override
 					public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
 					{
-						if (dir.getNameCount() > path.getNameCount())
+						if (dir.getNameCount() > 0)
 						{
-							children.add(new NodeZipFolder(NodeZipFolder.this.getFullPath(), dir, getParentArchive()));
+							children.add(new NodeZipFolder(NodeZipArchive.this.getFullPath(), dir, NodeZipArchive.this.getFile().toPath()));
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 						else
@@ -80,11 +77,5 @@ public class NodeZipFolder extends NodeZipItem
 		{
 			throw new RuntimeException(e);
 		}
-	}
-
-	@Override
-	public Icon getIcon()
-	{
-		return UIManager.getIcon("FileView.directoryIcon");
 	}
 }

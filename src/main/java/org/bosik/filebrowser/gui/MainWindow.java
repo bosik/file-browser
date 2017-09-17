@@ -1,9 +1,9 @@
 package org.bosik.filebrowser.gui;
 
-import org.bosik.filebrowser.core.PathNotFoundException;
-import org.bosik.filebrowser.core.TreeBrowser;
-import org.bosik.filebrowser.core.dataProvider.Node;
-import org.bosik.filebrowser.core.dataProvider.file.NodeFS;
+import org.bosik.filebrowser.core.browser.PathNotFoundException;
+import org.bosik.filebrowser.core.browser.TreeBrowser;
+import org.bosik.filebrowser.core.nodes.Node;
+import org.bosik.filebrowser.core.nodes.file.NodeFS;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
@@ -149,7 +149,6 @@ public class MainWindow extends JFrame
 
 	private void initSystem()
 	{
-		// TODO: move to background thread
 		browser = new TreeBrowser();
 	}
 

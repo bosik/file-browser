@@ -1,6 +1,6 @@
-package org.bosik.filebrowser.core.dataProvider.file;
+package org.bosik.filebrowser.core.nodes.file;
 
-import org.bosik.filebrowser.core.dataProvider.Node;
+import org.bosik.filebrowser.core.nodes.Node;
 
 import java.io.File;
 import java.util.Collections;

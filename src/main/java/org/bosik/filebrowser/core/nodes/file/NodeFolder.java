@@ -1,8 +1,8 @@
-package org.bosik.filebrowser.core.dataProvider.file;
+package org.bosik.filebrowser.core.nodes.file;
 
 import org.bosik.filebrowser.core.Util;
-import org.bosik.filebrowser.core.dataProvider.Node;
-import org.bosik.filebrowser.core.dataProvider.zip.NodeZipArchive;
+import org.bosik.filebrowser.core.nodes.Node;
+import org.bosik.filebrowser.core.nodes.zip.NodeZipArchive;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;

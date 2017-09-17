@@ -1,4 +1,4 @@
-package org.bosik.filebrowser.core;
+package org.bosik.filebrowser.core.browser;
 
 /**
  * @author Nikita Bosik
