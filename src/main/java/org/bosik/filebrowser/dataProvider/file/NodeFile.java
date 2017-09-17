@@ -12,9 +12,9 @@ import java.util.List;
  */
 public class NodeFile extends NodeFS
 {
-	public NodeFile(File file)
+	public NodeFile(Node parent, File file)
 	{
-		super(file);
+		super(parent, file);
 	}
 
 	@Override
@@ -24,7 +24,7 @@ public class NodeFile extends NodeFS
 	}
 
 	@Override
-	public List<Node> getChildren()
+	public List<Node> fetchChildren()
 	{
 		return Collections.emptyList();
 	}

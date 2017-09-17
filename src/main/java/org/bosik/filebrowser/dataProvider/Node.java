@@ -11,7 +11,11 @@ public interface Node
 {
 	String getName();
 
+	String getFullPath();
+
 	Icon getIcon();
+
+	Node getParent();
 
 	boolean isLeaf();
 

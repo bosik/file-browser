@@ -6,6 +6,7 @@ import org.bosik.filebrowser.dataProvider.file.NodeFS;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -15,6 +16,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
@@ -66,9 +68,10 @@ import java.util.concurrent.Executors;
 public class MainWindow extends JFrame
 {
 	// CONSTANTS
-	private static final String APP_TITLE    = "File Browser";
+	private static final String APP_TITLE    = " - File Browser";
 	private static final int    ICON_PADDING = 6;
 	private static final int    BORDER_SMALL = 3;
+	private static final int    BORDER_BIG   = 6;
 
 	// SYSTEM
 	private TreeBrowser browser;
@@ -77,12 +80,14 @@ public class MainWindow extends JFrame
 
 	// GUI
 	private JPanel       ui;
+	private JTextField   textAddress;
 	private JTree        tree;
 	private JTable       table;
 	private JScrollPane  panelTable;
 	private JProgressBar progressBar;
 	private JTextArea    previewText;
 	private TableModel   tableModel;
+	private TreePath     currentPath;
 
 	// =========================================================================================
 
@@ -96,61 +101,106 @@ public class MainWindow extends JFrame
 
 	private Container buildRootPanel()
 	{
-		if (ui == null)
+		return ui = new JPanel()
 		{
-			ui = new JPanel(new BorderLayout(BORDER_SMALL, BORDER_SMALL))
 			{
+				setLayout(new BorderLayout(BORDER_SMALL, BORDER_SMALL));
+
+				// address panel
+				add(new JPanel()
 				{
-					add(new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(tree = buildTree())
 					{
-						{
-							setMinimumSize(new Dimension(200, (int) getMinimumSize().getHeight()));
-							setPreferredSize(new Dimension(200, (int) getPreferredSize().getHeight()));
-						}
-					}, new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, panelTable = new JScrollPane(table = buildTable())
-					{
-						{
-							getViewport().setBackground(Color.WHITE);
+						setLayout(new BorderLayout(BORDER_BIG, BORDER_BIG));
+						setPreferredSize(new Dimension(getWidth(), 30));
 
-						}
-					}, new JPanel(new BorderLayout(BORDER_SMALL, BORDER_SMALL))
-					{
+						add(textAddress = new JTextField()
 						{
-							setMinimumSize(new Dimension(200, (int) getMinimumSize().getHeight()));
-							setPreferredSize(new Dimension(200, (int) getPreferredSize().getHeight()));
-
-							add(previewText = new JTextArea()
 							{
+								//setLayout(new BorderLayout(BORDER_BIG, BORDER_BIG));
+
+							}
+						}, BorderLayout.CENTER);
+					}
+				}, BorderLayout.PAGE_START);
+				add(new JButton("Up")
+				{
+					{
+						addActionListener(new AbstractAction()
+						{
+							@Override
+							public void actionPerformed(ActionEvent e)
+							{
+								if (browser.getCurrentNode().getParent() != null)
 								{
-									setLineWrap(true);
-									setEditable(false);
-									setVisible(false);
+									showFiles(browser.getCurrentNode().getParent());
 								}
-							});
-						}
-					})
-					{
-						{
-							setResizeWeight(1.0);
-						}
-					}), BorderLayout.CENTER);
+							}
+						});
+					}
+				}, BorderLayout.PAGE_START);
 
-					add(new JPanel(new BorderLayout(BORDER_SMALL, BORDER_SMALL))
+				// main panel
+				add(new JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
+				{
 					{
+						setLeftComponent(new JScrollPane()
 						{
-							setBorder(new BevelBorder(BevelBorder.LOWERED));
-							setPreferredSize(new Dimension(getWidth(), 20));
-							add(progressBar = new JProgressBar()
-							{{
-								setVisible(false);
-							}}, BorderLayout.EAST);
-						}
-					}, BorderLayout.PAGE_END);
-				}
-			};
-		}
+							{
+								setMinimumSize(new Dimension(200, (int) getMinimumSize().getHeight()));
+								setPreferredSize(new Dimension(200, (int) getPreferredSize().getHeight()));
+								setViewportView(tree = buildTree());
+							}
+						});
+						setRightComponent(new JSplitPane(HORIZONTAL_SPLIT)
+						{
+							{
+								setResizeWeight(1.0);
 
-		return ui;
+								setLeftComponent(panelTable = new JScrollPane()
+								{
+									{
+										getViewport().setBackground(Color.WHITE);
+										setViewportView(table = buildTable());
+									}
+								});
+								setRightComponent(new JPanel()
+								{
+									{
+										setLayout(new BorderLayout(BORDER_SMALL, BORDER_SMALL));
+										setMinimumSize(new Dimension(200, (int) getMinimumSize().getHeight()));
+										setPreferredSize(new Dimension(200, (int) getPreferredSize().getHeight()));
+
+										add(previewText = new JTextArea()
+										{
+											{
+												setLineWrap(true);
+												setEditable(false);
+												setVisible(false);
+											}
+										});
+									}
+								});
+							}
+						});
+					}
+				}, BorderLayout.CENTER);
+
+				// status panel
+				add(new JPanel()
+				{
+					{
+						setLayout(new BorderLayout(BORDER_SMALL, BORDER_SMALL));
+						setBorder(new BevelBorder(BevelBorder.LOWERED));
+						setPreferredSize(new Dimension(getWidth(), 20));
+
+						add(progressBar = new JProgressBar()
+						{{
+							setVisible(false);
+						}}, BorderLayout.EAST);
+					}
+				}, BorderLayout.PAGE_END);
+			}
+		};
 	}
 
 	private JTree buildTree()
@@ -273,6 +323,7 @@ public class MainWindow extends JFrame
 				TreePath path = tree.getPathForLocation(e.getX(), e.getY());
 				if (path != null)
 				{
+					currentPath = tree.getSelectionPath();
 					DefaultMutableTreeNode item = (DefaultMutableTreeNode) path.getLastPathComponent();
 					Node node = (Node) item.getUserObject();
 					showFiles(node);
@@ -287,9 +338,11 @@ public class MainWindow extends JFrame
 			{
 				if (e.getKeyChar() == KeyEvent.VK_ENTER)
 				{
+					JTree tree = (JTree) e.getSource();
 					TreePath path = tree.getSelectionPath();
 					if (path != null)
 					{
+						currentPath = tree.getSelectionPath();
 						DefaultMutableTreeNode item = (DefaultMutableTreeNode) path.getLastPathComponent();
 						Node node = (Node) item.getUserObject();
 						showFiles(node);
@@ -363,14 +416,14 @@ public class MainWindow extends JFrame
 
 		if (row != -1)
 		{
-			Node item = browser.getItems().get(row);
-			if (item.isLeaf())
+			Node node = browser.getItems().get(row);
+			if (node.isLeaf())
 			{
 				try
 				{
-					if (item instanceof NodeFS)
+					if (node instanceof NodeFS)
 					{
-						desktop.open(((NodeFS) item).getFile());
+						desktop.open(((NodeFS) node).getFile());
 					}
 				}
 				catch (IOException t)
@@ -380,8 +433,33 @@ public class MainWindow extends JFrame
 			}
 			else
 			{
-				showFiles(item);
-				// TODO: update tree
+				showFiles(node);
+				//				if (currentPath != null)
+				//				{
+				//					DefaultMutableTreeNode item = (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+				//					for (int i = 0; i < item.getChildCount(); i++)
+				//					{
+				//						DefaultMutableTreeNode child = (DefaultMutableTreeNode) item.getChildAt(i);
+				//
+				//						Node childNode = (Node) child.getUserObject();
+				//
+				//						if (childNode != null)
+				//						{
+				//							if (childNode.getFullPath().equals(node.getFullPath()))
+				//							{
+				//								currentPath = currentPath.pathByAddingChild(child);
+				//								tree.expandPath(currentPath);
+				//								tree.setSelectionPath(currentPath);
+				//								tree.repaint();
+				//								break;
+				//							}
+				//						}
+				//						else
+				//						{
+				//							tree.expandPath(currentPath);
+				//						}
+				//					}
+				//				}
 			}
 		}
 	}
@@ -504,7 +582,8 @@ public class MainWindow extends JFrame
 		//				JFrame frame = (JFrame) SwingUtilities.getRoot(ui);
 		//				frame.setIconImages(browser.getCurrentNode().getIcon().getImage());
 
-		setTitle_(node.getName());
+		textAddress.setText(node.getFullPath());
+		setTitle(node.getName() + APP_TITLE);
 		showProgressBar();
 
 		panelTable.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -606,12 +685,6 @@ public class MainWindow extends JFrame
 			e.printStackTrace();
 			return "Can't build preview";
 		}
-	}
-
-	private void setTitle_(String title)
-	{
-		setTitle(title);
-		ui.repaint();
 	}
 
 	private void buildUi()

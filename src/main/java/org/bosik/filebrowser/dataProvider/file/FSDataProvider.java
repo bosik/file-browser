@@ -17,7 +17,7 @@ public class FSDataProvider implements DataProvider
 	@Override
 	public Node getRoot()
 	{
-		return new NodeCached(new NodeFolder(null)
+		return new NodeFolder(null, null)
 		{
 			@Override
 			public String getName()
@@ -26,17 +26,17 @@ public class FSDataProvider implements DataProvider
 			}
 
 			@Override
-			public List<Node> getChildren()
+			public List<Node> fetchChildren()
 			{
 				List<Node> children = new ArrayList<>();
 
 				for (File file : FileSystemView.getFileSystemView().getRoots())
 				{
-					children.add(new NodeFolder(file));
+					children.add(new NodeFolder(this, file));
 				}
 
 				return children;
 			}
-		});
+		};
 	}
 }

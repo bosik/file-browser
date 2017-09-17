@@ -10,15 +10,16 @@ import java.io.File;
  * @author Nikita Bosik
  * @since 2017-09-03
  */
-public abstract class NodeFS implements Node
+public abstract class NodeFS extends NodeAbstract
 {
 	// TODO: check thread-safety
 	private static final FileSystemView fileSystemView = FileSystemView.getFileSystemView();
 
 	private File file;
 
-	public NodeFS(File file)
+	public NodeFS(Node parent, File file)
 	{
+		super(parent);
 		this.file = file;
 	}
 
@@ -31,7 +32,14 @@ public abstract class NodeFS implements Node
 	public String getName()
 	{
 		return fileSystemView.getSystemDisplayName(file);
-		//		return file.getName();
+	}
+
+	@Override
+	public String getFullPath()
+	{
+		String path = file.getAbsolutePath();
+		// standard Windows folders have GUIDed names
+		return !path.contains("::") ? path : getName();
 	}
 
 	@Override

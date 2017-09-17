@@ -5,7 +5,6 @@ import org.bosik.filebrowser.dataProvider.Util;
 
 import javax.swing.Icon;
 import javax.swing.UIManager;
-import javax.swing.filechooser.FileSystemView;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -21,24 +20,11 @@ import java.util.List;
  * @author Nikita Bosik
  * @since 2017-09-03
  */
-public class NodeZipFolder implements Node
+public class NodeZipFolder extends NodeZipItem
 {
-	// TODO: check thread-safety
-	private static final FileSystemView fileSystemView = FileSystemView.getFileSystemView();
-
-	private Path path;
-	private Path parentArchive;
-
-	public NodeZipFolder(Path path, Path parentArchive)
+	public NodeZipFolder(Node parent, Path path, Path parentArchive)
 	{
-		this.path = path;
-		this.parentArchive = parentArchive;
-	}
-
-	@Override
-	public String getName()
-	{
-		return path.getFileName().toString();
+		super(parent, path, parentArchive);
 	}
 
 	@Override
@@ -48,26 +34,25 @@ public class NodeZipFolder implements Node
 	}
 
 	@Override
-	public List<Node> getChildren()
+	public List<Node> fetchChildren()
 	{
 		final List<Node> children = new ArrayList<>();
 
 		try
 		{
-			FileSystem zipFs = FileSystems.newFileSystem(parentArchive, NodeZipFolder.class.getClassLoader());
+			FileSystem zipFs = FileSystems.newFileSystem(getParentArchive(), NodeZipFolder.class.getClassLoader());
 
 			for (Path root : zipFs.getRootDirectories())
 			{
-				root = root.resolve(path);
-				final Path finalRoot = root;
+				final Path path = root.resolve(getPath());
 
-				Files.walkFileTree(root, new SimpleFileVisitor<Path>()
+				Files.walkFileTree(path, new SimpleFileVisitor<Path>()
 				{
 					@Override
 					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
 					{
 						// TODO: check file/inner archive
-						children.add(new NodeZipFile(file, parentArchive));
+						children.add(new NodeZipFile(NodeZipFolder.this, file, getParentArchive()));
 
 						return FileVisitResult.CONTINUE;
 					}
@@ -75,9 +60,9 @@ public class NodeZipFolder implements Node
 					@Override
 					public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
 					{
-						if (dir.getNameCount() > finalRoot.getNameCount())
+						if (dir.getNameCount() > path.getNameCount())
 						{
-							children.add(new NodeZipFolder(dir, parentArchive));
+							children.add(new NodeZipFolder(NodeZipFolder.this, dir, getParentArchive()));
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 						else

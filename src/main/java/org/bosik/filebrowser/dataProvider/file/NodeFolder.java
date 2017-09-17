@@ -14,9 +14,9 @@ import java.util.List;
  */
 public class NodeFolder extends NodeFS
 {
-	public NodeFolder(File file)
+	public NodeFolder(Node parent, File file)
 	{
-		super(file);
+		super(parent, file);
 	}
 
 	@Override
@@ -26,7 +26,7 @@ public class NodeFolder extends NodeFS
 	}
 
 	@Override
-	public List<Node> getChildren()
+	public List<Node> fetchChildren()
 	{
 		System.out.println("Building children for " + getName() + "...");
 
@@ -43,28 +43,28 @@ public class NodeFolder extends NodeFS
 		}
 
 		File[] files = FileSystemView.getFileSystemView().getFiles(getFile(), true);
-		for (File child : files)
+		for (File file : files)
 		{
-			if (child.isDirectory())
+			if (file.isDirectory())
 			{
-				children.add(new NodeFolder(child));
+				children.add(new NodeFolder(this, file));
 			}
-			else if (child.isFile())
+			else if (file.isFile())
 			{
-				String name = child.getName().toLowerCase();
+				String name = file.getName().toLowerCase();
 				if (name.endsWith(".zip") || name.endsWith(".jar") || name.endsWith(".war"))
 				{
-					children.add(new NodeZip(child));
+					children.add(new NodeZip(this, file));
 				}
 				else
 				{
-					children.add(new NodeFile(child));
+					children.add(new NodeFile(this, file));
 				}
 			}
 			else
 			{
 				// TODO: think
-				System.out.println("Unknown item type found: " + child.getName());
+				System.out.println("Unknown item type found: " + file.getName());
 			}
 		}
 

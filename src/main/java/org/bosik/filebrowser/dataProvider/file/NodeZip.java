@@ -21,9 +21,9 @@ import java.util.List;
  */
 public class NodeZip extends NodeFS
 {
-	public NodeZip(File file)
+	public NodeZip(Node parent, File file)
 	{
-		super(file);
+		super(parent, file);
 	}
 
 	@Override
@@ -33,7 +33,7 @@ public class NodeZip extends NodeFS
 	}
 
 	@Override
-	public List<Node> getChildren()
+	public List<Node> fetchChildren()
 	{
 		final List<Node> children = new ArrayList<>();
 
@@ -49,7 +49,7 @@ public class NodeZip extends NodeFS
 					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
 					{
 						// TODO: check file/inner archive
-						children.add(new NodeZipFile(file, NodeZip.this.getFile().toPath()));
+						children.add(new NodeZipFile(NodeZip.this, file, NodeZip.this.getFile().toPath()));
 
 						return FileVisitResult.CONTINUE;
 					}
@@ -59,7 +59,7 @@ public class NodeZip extends NodeFS
 					{
 						if (dir.getNameCount() > 0)
 						{
-							children.add(new NodeZipFolder(dir, NodeZip.this.getFile().toPath()));
+							children.add(new NodeZipFolder(NodeZip.this, dir, NodeZip.this.getFile().toPath()));
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 						else

@@ -12,21 +12,11 @@ import java.util.List;
  * @author Nikita Bosik
  * @since 2017-09-03
  */
-public class NodeZipFile implements Node
+public class NodeZipFile extends NodeZipItem
 {
-	private Path path;
-	private Path parentArchive;
-
-	public NodeZipFile(Path path, Path parentArchive)
+	public NodeZipFile(Node parent, Path path, Path parentArchive)
 	{
-		this.path = path;
-		this.parentArchive = parentArchive;
-	}
-
-	@Override
-	public String getName()
-	{
-		return path.getFileName().toString();
+		super(parent, path, parentArchive);
 	}
 
 	@Override
@@ -36,7 +26,7 @@ public class NodeZipFile implements Node
 	}
 
 	@Override
-	public List<Node> getChildren()
+	public List<Node> fetchChildren()
 	{
 		return Collections.emptyList();
 	}
