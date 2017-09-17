@@ -2,6 +2,12 @@ package org.bosik.filebrowser.gui;
 
 import org.bosik.filebrowser.core.browser.TreeBrowser;
 import org.bosik.filebrowser.core.browser.exceptions.PathException;
+import org.bosik.filebrowser.core.browser.resolvers.PathResolver;
+import org.bosik.filebrowser.core.browser.resolvers.ResolverFS;
+import org.bosik.filebrowser.core.browser.resolvers.ResolverFTP;
+import org.bosik.filebrowser.core.browser.resolvers.ResolverRoot;
+import org.bosik.filebrowser.core.browser.resolvers.ResolverSpecialWindows;
+import org.bosik.filebrowser.core.browser.resolvers.ResolverZip;
 import org.bosik.filebrowser.core.nodes.Node;
 import org.bosik.filebrowser.core.nodes.file.NodeFS;
 
@@ -95,7 +101,6 @@ public class MainWindow extends JFrame
 	private JScrollPane  panelPreviewText;
 	private JTextArea    previewText;
 	private TableModel   tableModel;
-	private TreePath     currentPath;
 
 	private File previewFile;
 
@@ -130,18 +135,6 @@ public class MainWindow extends JFrame
 				executorService.shutdownNow();
 			}
 		});
-		//		try
-		//		{
-		//			URL urlBig = getClass().getResource("fb-icon-32x32.png");
-		//			URL urlSmall = getClass().getResource("fb-icon-16x16.png");
-		//			List<Image> images = new ArrayList<>();
-		//			images.add(ImageIO.read(urlBig));
-		//			images.add(ImageIO.read(urlSmall));
-		//			f.setIconImages(images);
-		//		}
-		//		catch (Exception e)
-		//		{
-		//		}
 
 		pack();
 		setMinimumSize(getSize());
@@ -150,7 +143,16 @@ public class MainWindow extends JFrame
 
 	private void initSystem()
 	{
-		browser = new TreeBrowser();
+		browser = new TreeBrowser(new ArrayList<PathResolver>()
+		{
+			{
+				add(new ResolverRoot()); // must be first
+				add(new ResolverFS());
+				add(new ResolverFTP(new CredentialsProviderImpl(MainWindow.this)));
+				add(new ResolverSpecialWindows());
+				add(new ResolverZip());
+			}
+		});
 	}
 
 	private Container buildRootPanel()
@@ -399,14 +401,7 @@ public class MainWindow extends JFrame
 			public void mousePressed(MouseEvent e)
 			{
 				JTree tree = (JTree) e.getSource();
-				TreePath path = tree.getPathForLocation(e.getX(), e.getY());
-				if (path != null)
-				{
-					currentPath = tree.getSelectionPath();
-					DefaultMutableTreeNode item = (DefaultMutableTreeNode) path.getLastPathComponent();
-					Node node = (Node) item.getUserObject();
-					showFiles(node);
-				}
+				onTreePathChanged(tree.getPathForLocation(e.getX(), e.getY()));
 			}
 		});
 
@@ -418,19 +413,22 @@ public class MainWindow extends JFrame
 				if (e.getKeyChar() == KeyEvent.VK_ENTER)
 				{
 					JTree tree = (JTree) e.getSource();
-					TreePath path = tree.getSelectionPath();
-					if (path != null)
-					{
-						currentPath = tree.getSelectionPath();
-						DefaultMutableTreeNode item = (DefaultMutableTreeNode) path.getLastPathComponent();
-						Node node = (Node) item.getUserObject();
-						showFiles(node);
-					}
+					onTreePathChanged(tree.getSelectionPath());
 				}
 			}
 		});
 
 		return tree;
+	}
+
+	private void onTreePathChanged(TreePath path)
+	{
+		if (path != null)
+		{
+			DefaultMutableTreeNode item = (DefaultMutableTreeNode) path.getLastPathComponent();
+			Node node = (Node) item.getUserObject();
+			showFiles(node);
+		}
 	}
 
 	private JTable buildTable()
@@ -491,6 +489,18 @@ public class MainWindow extends JFrame
 		buttonUp.getInputMap(JTable.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), KEY_ACTION_REFRESH);
 		buttonUp.getActionMap().put(KEY_ACTION_REFRESH, actionRefresh);
 
+		final String KEY_ACTION_UP = "table-key-up";
+		AbstractAction actionUp = new AbstractAction()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				up();
+			}
+		};
+		table.getInputMap(JTable.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0), KEY_ACTION_UP);
+		table.getActionMap().put(KEY_ACTION_UP, actionUp);
+
 		table.addMouseListener(new MouseAdapter()
 		{
 			public void mousePressed(MouseEvent e)
@@ -503,6 +513,8 @@ public class MainWindow extends JFrame
 				}
 			}
 		});
+		table.addAncestorListener(new FocusAncestorListener());
+
 		return table;
 	}
 
@@ -533,32 +545,6 @@ public class MainWindow extends JFrame
 			else
 			{
 				showFiles(node);
-				//				if (currentPath != null)
-				//				{
-				//					DefaultMutableTreeNode item = (DefaultMutableTreeNode) currentPath.getLastPathComponent();
-				//					for (int i = 0; i < item.getChildCount(); i++)
-				//					{
-				//						DefaultMutableTreeNode child = (DefaultMutableTreeNode) item.getChildAt(i);
-				//
-				//						Node childNode = (Node) child.getUserObject();
-				//
-				//						if (childNode != null)
-				//						{
-				//							if (childNode.getFullPath().equals(node.getFullPath()))
-				//							{
-				//								currentPath = currentPath.pathByAddingChild(child);
-				//								tree.expandPath(currentPath);
-				//								tree.setSelectionPath(currentPath);
-				//								tree.repaint();
-				//								break;
-				//							}
-				//						}
-				//						else
-				//						{
-				//							tree.expandPath(currentPath);
-				//						}
-				//					}
-				//				}
 			}
 		}
 	}
@@ -957,5 +943,4 @@ public class MainWindow extends JFrame
 		showErrorMessage("Error", e.getMessage());
 		ui.repaint();
 	}
-
 }

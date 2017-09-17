@@ -1,6 +1,5 @@
 package org.bosik.filebrowser.core.nodes.zip;
 
-import org.bosik.filebrowser.core.Util;
 import org.bosik.filebrowser.core.nodes.Node;
 import org.bosik.filebrowser.core.nodes.file.NodeFS;
 
@@ -71,7 +70,7 @@ public class NodeZipArchive extends NodeFS
 				});
 			}
 
-			return Util.sort(children);
+			return sort(children);
 		}
 		catch (IOException e)
 		{

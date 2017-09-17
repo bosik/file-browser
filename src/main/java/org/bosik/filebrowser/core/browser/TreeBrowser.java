@@ -3,15 +3,8 @@ package org.bosik.filebrowser.core.browser;
 import org.bosik.filebrowser.core.browser.exceptions.PathException;
 import org.bosik.filebrowser.core.browser.exceptions.PathNotFoundException;
 import org.bosik.filebrowser.core.browser.resolvers.PathResolver;
-import org.bosik.filebrowser.core.browser.resolvers.ResolverFS;
-import org.bosik.filebrowser.core.browser.resolvers.ResolverFTP;
-import org.bosik.filebrowser.core.browser.resolvers.ResolverRoot;
-import org.bosik.filebrowser.core.browser.resolvers.ResolverSpecialWindows;
-import org.bosik.filebrowser.core.browser.resolvers.ResolverZip;
 import org.bosik.filebrowser.core.nodes.Node;
-import org.bosik.filebrowser.gui.CredentialsProviderImpl;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,17 +22,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TreeBrowser
 {
+	private final List<PathResolver> resolvers;
 	private final Map<String, List<Node>> childrenCache = new ConcurrentHashMap<>();
-	private final List<PathResolver>      resolvers     = new ArrayList<PathResolver>()
+
+	public TreeBrowser(List<PathResolver> resolvers)
 	{
-		{
-			add(new ResolverRoot()); // must be first
-			add(new ResolverFS());
-			add(new ResolverFTP(new CredentialsProviderImpl())); // FIXME
-			add(new ResolverSpecialWindows());
-			add(new ResolverZip());
-		}
-	};
+		this.resolvers = resolvers;
+	}
 
 	/**
 	 * <i>Slow</i>. Fetch node for specified path

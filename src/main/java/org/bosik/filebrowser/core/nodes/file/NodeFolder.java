@@ -70,6 +70,6 @@ public class NodeFolder extends NodeFS
 		}
 
 		System.out.println("Building children for " + getName() + " finished");
-		return Util.sort(children);
+		return sort(children);
 	}
 }

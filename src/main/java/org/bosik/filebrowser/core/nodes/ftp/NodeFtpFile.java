@@ -1,10 +1,10 @@
 package org.bosik.filebrowser.core.nodes.ftp;
 
+import org.apache.commons.net.ftp.FTPClient;
 import org.bosik.filebrowser.core.nodes.Node;
 
 import javax.swing.Icon;
 import javax.swing.UIManager;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -14,9 +14,9 @@ import java.util.List;
  */
 public class NodeFtpFile extends NodeFtpItem
 {
-	public NodeFtpFile(NodeFtp ftpRoot, String parentPath, Path path)
+	public NodeFtpFile(FTPClient client, ServerURL url)
 	{
-		super(ftpRoot, parentPath, path);
+		super(client, url);
 	}
 
 	@Override

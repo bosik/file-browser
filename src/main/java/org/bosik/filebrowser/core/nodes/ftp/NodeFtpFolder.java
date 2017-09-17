@@ -7,7 +7,6 @@ import org.bosik.filebrowser.core.nodes.Node;
 import javax.swing.Icon;
 import javax.swing.UIManager;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,9 +17,9 @@ import java.util.List;
  */
 public class NodeFtpFolder extends NodeFtpItem
 {
-	public NodeFtpFolder(NodeFtp ftpRoot, String parentPath, Path path)
+	public NodeFtpFolder(FTPClient client, ServerURL url)
 	{
-		super(ftpRoot, parentPath, path);
+		super(client, url);
 	}
 
 	@Override
@@ -35,20 +34,35 @@ public class NodeFtpFolder extends NodeFtpItem
 		List<Node> children = new ArrayList<>();
 		try
 		{
-			FTPClient client = getFtpRoot().getClient();
+			FTPClient client = getClient();
 
-			String currentPath = getPath().toString();
+			String currentPath = getUrl().getPath();
 
 			FTPFile[] folders = client.listDirectories(currentPath);
 			for (FTPFile folder : folders)
 			{
-				children.add(new NodeFtpFolder(getFtpRoot(), getFullPath(), Paths.get(getName()).resolve(folder.getName())));
+				if (folder.getType() == FTPFile.DIRECTORY_TYPE)
+				{
+					String host = getUrl().getHost();
+					int port = getUrl().getPort();
+					String path = Paths.get(getUrl().getPath()).resolve(folder.getName()).toString();
+
+					children.add(new NodeFtpFolder(client, new ServerURL(host, port, path)));
+				}
 			}
 
 			FTPFile[] files = client.listFiles(currentPath);
 			for (FTPFile file : files)
 			{
-				children.add(new NodeFtpFile(getFtpRoot(), getFullPath(), Paths.get(getName()).resolve(file.getName())));
+				// some servers may include folders in listFiles(), so we have to explicitly check the type
+				if (file.getType() == FTPFile.FILE_TYPE)
+				{
+					String host = getUrl().getHost();
+					int port = getUrl().getPort();
+					String path = Paths.get(getUrl().getPath()).resolve(file.getName()).toString();
+
+					children.add(new NodeFtpFile(client, new ServerURL(host, port, path)));
+				}
 			}
 
 			return children;

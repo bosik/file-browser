@@ -1,10 +1,11 @@
 package org.bosik.filebrowser.core.nodes.ftp;
 
-import org.bosik.filebrowser.core.Util;
+import org.apache.commons.net.ftp.FTPClient;
 import org.bosik.filebrowser.core.nodes.NodeAbstract;
 
 import javax.swing.Icon;
-import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Objects;
 
 /**
  * @author Nikita Bosik
@@ -12,26 +13,43 @@ import java.nio.file.Path;
  */
 public abstract class NodeFtpItem extends NodeAbstract
 {
-	private NodeFtp ftpRoot;
-	private Path    path;
+	private FTPClient client;
+	private ServerURL url;
 
-	public NodeFtpItem(NodeFtp ftpRoot, String parentPath, Path path)
+	public NodeFtpItem(FTPClient client, ServerURL url)
 	{
-		super(parentPath);
-		this.ftpRoot = ftpRoot;
-		this.path = path;
+		super(null);
+
+		Objects.requireNonNull(client, "client is null");
+		Objects.requireNonNull(url, "URL is null");
+
+		this.client = client;
+		this.url = url;
 	}
 
 	@Override
 	public String getName()
 	{
-		return path.getFileName().toString();
+		if (url.getPath().isEmpty())
+		{
+			return url.getRoot().toString();
+		}
+		else
+		{
+			return Paths.get(url.getPath()).getFileName().toString();
+		}
 	}
 
 	@Override
 	public String getFullPath()
 	{
-		return Util.concatenatePath(ftpRoot.getFullPath(), path.toString());
+		return url.toString();
+	}
+
+	@Override
+	public String getParentPath()
+	{
+		return url.getParent().toString();
 	}
 
 	@Override
@@ -40,13 +58,13 @@ public abstract class NodeFtpItem extends NodeAbstract
 		return null;
 	}
 
-	protected NodeFtp getFtpRoot()
+	public FTPClient getClient()
 	{
-		return ftpRoot;
+		return client;
 	}
 
-	protected Path getPath()
+	public ServerURL getUrl()
 	{
-		return path;
+		return url;
 	}
 }
