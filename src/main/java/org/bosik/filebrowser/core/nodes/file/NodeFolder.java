@@ -33,16 +33,6 @@ public class NodeFolder extends NodeFS
 
 		List<Node> children = new ArrayList<>();
 
-		//		try
-		//		{
-		//			Thread.sleep(500);
-		//		}
-		//		catch (InterruptedException e)
-		//		{
-		//			e.printStackTrace();
-		//			return children;
-		//		}
-
 		File[] files = FileSystemView.getFileSystemView().getFiles(getFile(), false);
 
 		for (File file : files)

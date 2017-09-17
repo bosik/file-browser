@@ -172,7 +172,6 @@ public class MainWindow extends JFrame
 						add(textAddress = new JTextField()
 						{
 							{
-								//setLayout(new BorderLayout(BORDER_BIG, BORDER_BIG));
 								addActionListener(e ->
 								{
 									showFiles(textAddress.getText());
@@ -438,7 +437,6 @@ public class MainWindow extends JFrame
 		table.setShowVerticalLines(false);
 		table.setShowHorizontalLines(false);
 		table.setBackground(Color.WHITE);
-		//table.setAutoCreateRowSorter(true);
 		table.setRowHeight(16 + ICON_PADDING);
 
 		tableModel = new TableModel();
@@ -453,7 +451,7 @@ public class MainWindow extends JFrame
 
 				if (row >= 0 && row < model.getRowCount())
 				{
-					showPreview(model.getNode(row)); // FIXME: move away from EDT
+					showPreview(model.getNode(row));
 				}
 				else
 				{
@@ -758,6 +756,8 @@ public class MainWindow extends JFrame
 
 	private void showPreview(Node node)
 	{
+		// FIXME: move away from EDT
+
 		if (node.isLeaf())
 		{
 			if (node instanceof NodeFS)
@@ -789,7 +789,7 @@ public class MainWindow extends JFrame
 
 	private void showPreviewText(File file)
 	{
-		final int MAX_PREVIEW_SIZE = 1024;
+		final int MAX_PREVIEW_SIZE = 1024; // bytes
 		previewText.setText(getPreviewText(file, MAX_PREVIEW_SIZE));
 		panelPreviewText.setVisible(true);
 		panelPreviewText.repaint();
@@ -912,24 +912,6 @@ public class MainWindow extends JFrame
 		{
 			e.printStackTrace();
 		}
-	}
-
-	private TreePath findTreePath(File find)
-	{
-		for (int i = 0; i < tree.getRowCount(); i++)
-		{
-			TreePath treePath = tree.getPathForRow(i);
-			Object object = treePath.getLastPathComponent();
-			DefaultMutableTreeNode node = (DefaultMutableTreeNode) object;
-			File nodeFile = (File) node.getUserObject();
-
-			if (nodeFile == find)
-			{
-				return treePath;
-			}
-		}
-
-		return null;
 	}
 
 	private void showErrorMessage(String title, String message)

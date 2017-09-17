@@ -64,18 +64,6 @@ public class TreeBrowser
 	{
 		Objects.requireNonNull(node, "Node is null");
 		return childrenCache.computeIfAbsent(getKey(node), key -> node.getChildren());
-
-		//		try
-		//		{
-		//			Thread.sleep(1000);
-		//		}
-		//		catch (InterruptedException e)
-		//		{
-		//			System.err.println("Loading " + node.getName() + " interrupted");
-		//			return Collections.emptyList();
-		//		}
-
-		// return node.getChildren(); // FIXME
 	}
 
 	/**

@@ -3,7 +3,6 @@ package org.bosik.filebrowser.core.nodes.ftp;
 import org.apache.commons.net.ftp.FTPClient;
 import org.bosik.filebrowser.core.nodes.NodeAbstract;
 
-import javax.swing.Icon;
 import java.nio.file.Paths;
 import java.util.Objects;
 
@@ -50,12 +49,6 @@ public abstract class NodeFtpItem extends NodeAbstract
 	public String getParentPath()
 	{
 		return url.getParent().toString();
-	}
-
-	@Override
-	public Icon getIcon()
-	{
-		return null;
 	}
 
 	public FTPClient getClient()

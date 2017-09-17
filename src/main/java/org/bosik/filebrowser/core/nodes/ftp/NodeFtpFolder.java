@@ -36,9 +36,7 @@ public class NodeFtpFolder extends NodeFtpItem
 		{
 			FTPClient client = getClient();
 
-			String currentPath = getUrl().getPath();
-
-			FTPFile[] folders = client.listDirectories(currentPath);
+			FTPFile[] folders = client.listDirectories(getUrl().getPath());
 			for (FTPFile folder : folders)
 			{
 				if (folder.getType() == FTPFile.DIRECTORY_TYPE)
@@ -51,7 +49,7 @@ public class NodeFtpFolder extends NodeFtpItem
 				}
 			}
 
-			FTPFile[] files = client.listFiles(currentPath);
+			FTPFile[] files = client.listFiles(getUrl().getPath());
 			for (FTPFile file : files)
 			{
 				// some servers may include folders in listFiles(), so we have to explicitly check the type

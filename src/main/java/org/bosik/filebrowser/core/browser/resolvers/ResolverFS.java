@@ -26,7 +26,7 @@ public class ResolverFS implements PathResolver
 			{
 				return new NodeZipArchive(file);
 			}
-			else
+			else if (file.isDirectory())
 			{
 				return new NodeFolder(file);
 			}
