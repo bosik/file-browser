@@ -1,7 +1,6 @@
-package org.bosik.filebrowser.dataProvider.file;
+package org.bosik.filebrowser.dataProvider;
 
-import org.bosik.filebrowser.dataProvider.DataProvider;
-import org.bosik.filebrowser.dataProvider.Node;
+import org.bosik.filebrowser.dataProvider.file.NodeFolder;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;

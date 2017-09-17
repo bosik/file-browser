@@ -1,6 +1,4 @@
-package org.bosik.filebrowser.dataProvider.file;
-
-import org.bosik.filebrowser.dataProvider.Node;
+package org.bosik.filebrowser.dataProvider;
 
 import java.util.List;
 

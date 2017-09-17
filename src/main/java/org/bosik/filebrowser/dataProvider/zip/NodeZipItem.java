@@ -1,6 +1,7 @@
-package org.bosik.filebrowser.dataProvider.file;
+package org.bosik.filebrowser.dataProvider.zip;
 
 import org.bosik.filebrowser.dataProvider.Node;
+import org.bosik.filebrowser.dataProvider.NodeAbstract;
 
 import java.nio.file.Path;
 

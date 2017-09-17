@@ -2,6 +2,7 @@ package org.bosik.filebrowser.dataProvider.file;
 
 import org.bosik.filebrowser.dataProvider.Node;
 import org.bosik.filebrowser.dataProvider.Util;
+import org.bosik.filebrowser.dataProvider.zip.NodeZipArchive;
 
 import javax.swing.filechooser.FileSystemView;
 import java.io.File;
@@ -54,7 +55,7 @@ public class NodeFolder extends NodeFS
 				String name = file.getName().toLowerCase();
 				if (name.endsWith(".zip") || name.endsWith(".jar") || name.endsWith(".war"))
 				{
-					children.add(new NodeZip(this, file));
+					children.add(new NodeZipArchive(this, file));
 				}
 				else
 				{

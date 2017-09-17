@@ -1,8 +1,10 @@
 package org.bosik.filebrowser;
 
+import org.bosik.filebrowser.dataProvider.FSDataProvider;
 import org.bosik.filebrowser.dataProvider.Node;
-import org.bosik.filebrowser.dataProvider.file.FSDataProvider;
 import org.bosik.filebrowser.dataProvider.file.NodeFS;
+import org.bosik.filebrowser.dataProvider.ftp.CredentialsProviderImpl;
+import org.bosik.filebrowser.dataProvider.ftp.NodeFtp;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
@@ -117,25 +119,38 @@ public class MainWindow extends JFrame
 						{
 							{
 								//setLayout(new BorderLayout(BORDER_BIG, BORDER_BIG));
+								addActionListener(e ->
+								{
+									String address = textAddress.getText();
 
+									if (address.startsWith("ftp://"))
+									{
+										Node node = new NodeFtp(null, address, new CredentialsProviderImpl());
+										showFiles(node);
+									}
+									else
+									{
+										//address = Paths.get(address).normalize().toString();
+										//textAddress.setText(address);
+									}
+								});
 							}
 						}, BorderLayout.CENTER);
-					}
-				}, BorderLayout.PAGE_START);
-				add(new JButton("Up")
-				{
-					{
-						addActionListener(new AbstractAction()
+
+						add(new JButton("Up")
 						{
-							@Override
-							public void actionPerformed(ActionEvent e)
 							{
-								if (browser.getCurrentNode().getParent() != null)
+								addActionListener(e ->
 								{
-									showFiles(browser.getCurrentNode().getParent());
-								}
+									// to skip technical root we check getParent() twice
+									if (browser.getCurrentNode().getParent() != null
+											&& browser.getCurrentNode().getParent().getFullPath() != null)
+									{
+										showFiles(browser.getCurrentNode().getParent());
+									}
+								});
 							}
-						});
+						}, BorderLayout.WEST);
 					}
 				}, BorderLayout.PAGE_START);
 
@@ -575,16 +590,9 @@ public class MainWindow extends JFrame
 			return;
 		}
 
-		// update icon
-		// TODO
-		//				List<Icon> images = new ArrayList<>();
-		//				images.add(browser.getCurrentNode().getIcon());
-		//				JFrame frame = (JFrame) SwingUtilities.getRoot(ui);
-		//				frame.setIconImages(browser.getCurrentNode().getIcon().getImage());
-
+		showProgressBar();
 		textAddress.setText(node.getFullPath());
 		setTitle(node.getName() + APP_TITLE);
-		showProgressBar();
 
 		panelTable.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		tableModel.setNodes(Collections.emptyList());
