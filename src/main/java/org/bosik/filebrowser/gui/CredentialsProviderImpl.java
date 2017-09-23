@@ -48,7 +48,6 @@ public class CredentialsProviderImpl implements CredentialsProvider
 		{
 			return new Credentials("anonymous", "");
 		}
-
 	}
 
 	private Credentials askCredentials(String serverUrl)

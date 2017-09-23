@@ -1,5 +1,6 @@
 package org.bosik.filebrowser.gui;
 
+import org.bosik.filebrowser.core.Util;
 import org.bosik.filebrowser.core.browser.TreeBrowser;
 import org.bosik.filebrowser.core.browser.exceptions.PathException;
 import org.bosik.filebrowser.core.browser.resolvers.PathResolver;
@@ -10,8 +11,10 @@ import org.bosik.filebrowser.core.browser.resolvers.ResolverSpecialWindows;
 import org.bosik.filebrowser.core.browser.resolvers.ResolverZip;
 import org.bosik.filebrowser.core.nodes.Node;
 import org.bosik.filebrowser.core.nodes.file.NodeFS;
+import org.bosik.taskEngine.core.MyExecutor;
+import org.bosik.taskEngine.core.StrategyTemplate;
+import org.bosik.taskEngine.core.Task;
 
-import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -48,7 +51,6 @@ import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.Dimension;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
@@ -59,7 +61,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -67,9 +68,66 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+
+enum TaskType
+{
+	POPULATE_TREE, SHOW_FILES, OPEN_FILE, PREVIEW_IMAGE;
+}
+
+class PreviewTask
+{
+	private String fileName;
+	private int    maxWidth;
+	private int    maxHeight;
+
+	public PreviewTask(String fileName, int maxWidth, int maxHeight)
+	{
+		this.fileName = fileName;
+		this.maxWidth = maxWidth;
+		this.maxHeight = maxHeight;
+	}
+
+	public String getFileName()
+	{
+		return fileName;
+	}
+
+	public int getMaxWidth()
+	{
+		return maxWidth;
+	}
+
+	public int getMaxHeight()
+	{
+		return maxHeight;
+	}
+
+	@Override
+	public boolean equals(Object o)
+	{
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+
+		PreviewTask that = (PreviewTask) o;
+
+		if (maxWidth != that.maxWidth)
+			return false;
+		if (maxHeight != that.maxHeight)
+			return false;
+		return fileName.equals(that.fileName);
+	}
+
+	@Override
+	public int hashCode()
+	{
+		int result = fileName.hashCode();
+		result = 31 * result + maxWidth;
+		result = 31 * result + maxHeight;
+		return result;
+	}
+}
 
 /**
  * @author Nikita Bosik
@@ -85,8 +143,31 @@ public class MainWindow extends JFrame
 
 	// SYSTEM
 	private TreeBrowser browser;
-	private final ExecutorService executorService = Executors.newCachedThreadPool();
+	//private final ExecutorService              executorService = Executors.newCachedThreadPool();
+	private final MyExecutor<TaskType, String> executorService2 = new MyExecutor<TaskType, String>((executor, task) ->
+	{
+		switch (task.getId())
+		{
+			case POPULATE_TREE:
+			{
+				return StrategyTemplate.<TaskType, String>singletonByIdAndParam().onBeforeSubmit(executor, task);
+			}
+			case SHOW_FILES:
+			case PREVIEW_IMAGE:
+			{
+				return StrategyTemplate.<TaskType, String>overrideById().onBeforeSubmit(executor, task);
+			}
+			case OPEN_FILE:
+			default:
+			{
+				return true;
+			}
+		}
+	});
 	private Node currentNode;
+
+	private volatile PreviewTask previewTask     = null;
+	private          Object      previewTaskLock = new Object();
 
 	// GUI
 	private JPanel       ui;
@@ -132,9 +213,48 @@ public class MainWindow extends JFrame
 		{
 			public void windowClosing(WindowEvent event)
 			{
-				executorService.shutdownNow();
+				executorService2.shutdownNow();
 			}
 		});
+
+		new Thread()
+		{
+			{
+				setDaemon(true);
+			}
+
+			@Override
+			public void run()
+			{
+				PreviewTask lastTask = null;
+				for (; ; )
+				{
+					synchronized (previewTaskLock)
+					{
+						try
+						{
+							previewTaskLock.wait(500);
+						}
+						catch (InterruptedException e)
+						{
+							System.err.println("Interrupted, something new is out there");
+						}
+					}
+
+					PreviewTask t = previewTask;
+					if (t != null && !t.equals(lastTask))
+					{
+						lastTask = t;
+						System.out.println("Loading " + lastTask.getFileName());
+						ImageIcon preview = Util.buildPreviewImage(lastTask.getFileName(), lastTask.getMaxWidth(), lastTask.getMaxHeight());
+						SwingUtilities.invokeLater(() ->
+						{
+							previewImageShow(preview);
+						});
+					}
+				}
+			}
+		}.start();
 
 		pack();
 		setMinimumSize(getSize());
@@ -254,7 +374,7 @@ public class MainWindow extends JFrame
 											{
 												if (previewImage.isVisible())
 												{
-													showPreviewImage(previewFile);
+													showPreviewImage(previewFile.getAbsolutePath());
 												}
 											}
 										});
@@ -526,16 +646,21 @@ public class MainWindow extends JFrame
 				if (node instanceof NodeFS)
 				{
 					File file = ((NodeFS) node).getFile();
-					submitTask(() ->
+
+					executorService2.submit(new Task<TaskType, String>(TaskType.OPEN_FILE, file.getAbsolutePath())
 					{
-						try
+						@Override
+						public void run()
 						{
-							Desktop.getDesktop().open(file);
-						}
-						catch (IOException e)
-						{
-							// TODO: handle
-							e.printStackTrace();
+							try
+							{
+								Desktop.getDesktop().open(file);
+							}
+							catch (IOException e)
+							{
+								// TODO: handle
+								e.printStackTrace();
+							}
 						}
 					});
 				}
@@ -574,50 +699,56 @@ public class MainWindow extends JFrame
 		item.add(new DefaultMutableTreeNode(null));
 		tree.repaint();
 
-		submitTask(() ->
+		final Node node = (Node) item.getUserObject();
+		final String param = (node != null) ? node.getFullPath() : "";
+
+		executorService2.submit(new Task<TaskType, String>(TaskType.POPULATE_TREE, param)
 		{
-			// calculate children
-
-			List<DefaultMutableTreeNode> children = new ArrayList<>();
-
-			Node node = (Node) item.getUserObject();
-			if (node != null && !node.isLeaf())
+			@Override
+			public void run()
 			{
-				for (Node childNode : browser.getChildren(node))
+				// calculate children
+
+				List<DefaultMutableTreeNode> children = new ArrayList<>();
+
+				if (node != null && !node.isLeaf())
 				{
-					if (!childNode.isLeaf())
+					for (Node childNode : browser.getChildren(node))
 					{
-						DefaultMutableTreeNode e = new DefaultMutableTreeNode(childNode);
-						e.add(new DefaultMutableTreeNode(null)); // "Loading..." stub
-						children.add(e);
+						if (!childNode.isLeaf())
+						{
+							DefaultMutableTreeNode e = new DefaultMutableTreeNode(childNode);
+							e.add(new DefaultMutableTreeNode(null)); // "Loading..." stub
+							children.add(e);
+						}
 					}
 				}
+
+				// remove stub & fill with actual data
+
+				SwingUtilities.invokeLater(() ->
+				{
+					item.removeAllChildren();
+					for (DefaultMutableTreeNode child : children)
+					{
+						item.add(child);
+					}
+
+					DefaultTreeModel model = (DefaultTreeModel) tree.getModel();
+					model.reload(item);
+
+					if (root)
+					{
+						tree.setSelectionInterval(0, 0);
+						tree.expandRow(0);
+
+						if (children.size() > 0)
+						{
+							showFiles((Node) children.get(0).getUserObject());
+						}
+					}
+				});
 			}
-
-			// remove stub & fill with actual data
-
-			SwingUtilities.invokeLater(() ->
-			{
-				item.removeAllChildren();
-				for (DefaultMutableTreeNode child : children)
-				{
-					item.add(child);
-				}
-
-				DefaultTreeModel model = (DefaultTreeModel) tree.getModel();
-				model.reload(item);
-
-				if (root)
-				{
-					tree.setSelectionInterval(0, 0);
-					tree.expandRow(0);
-
-					if (children.size() > 0)
-					{
-						showFiles((Node) children.get(0).getUserObject());
-					}
-				}
-			});
 		});
 	}
 
@@ -627,6 +758,27 @@ public class MainWindow extends JFrame
 		if (parentPath != null)
 		{
 			showFiles(parentPath);
+		}
+	}
+
+	private void previewImageLoading(String fileName)
+	{
+		previewImage.setVisible(true);
+		previewImage.setIcon(null);
+		previewImage.setText("Loading " + fileName + "...");
+	}
+
+	private void previewImageShow(ImageIcon preview)
+	{
+		if (preview != null)
+		{
+			previewImage.setIcon(preview);
+			previewImage.setVisible(true);
+			previewImage.setText("");
+		}
+		else
+		{
+			previewImage.setVisible(false);
 		}
 	}
 
@@ -651,8 +803,6 @@ public class MainWindow extends JFrame
 		}
 	}
 
-	private Future<?> futureShowFiles;
-
 	private void showFiles(String path)
 	{
 		showProgressBar();
@@ -660,81 +810,62 @@ public class MainWindow extends JFrame
 		panelTable.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		tableModel.setNodes(Collections.emptyList());
 
-		//		if (futureShowFiles != null)
-		//		{
-		//			futureShowFiles.cancel(true);
-		//		}
-
-		futureShowFiles = executorService.submit(() ->
+		executorService2.submit(new Task<TaskType, String>(TaskType.SHOW_FILES, path)
 		{
-			try
+			@Override
+			public void run()
 			{
-				View output;
-
 				try
 				{
-					Node node = browser.getNode(path);
-					List<Node> nodes = browser.getChildren(node);
-					output = new View(node, nodes);
-				}
-				catch (PathException e)
-				{
-					output = new View(null, Collections.emptyList());
-				}
+					View output;
 
-				final View finalOutput = output;
-
-				SwingUtilities.invokeLater(() ->
-				{
 					try
 					{
-						if (finalOutput.node != null)
-						{
-							currentNode = finalOutput.node;
-							this.setTitle(currentNode.getName() + APP_TITLE);
-							tableModel.setNodes(finalOutput.children);
-							setColumnWidth(table, 0, 16 + ICON_PADDING);
-						}
-						else
-						{
-							System.err.println("Path not found: " + path);
-							this.showErrorMessage("Error", "Path not found: " + path);
-							tableModel.setNodes(Collections.emptyList());
-						}
+						Node node = browser.getNode(path);
+						List<Node> nodes = browser.getChildren(node);
+						output = new View(node, nodes);
 					}
-					finally
+					catch (PathException e)
 					{
-						this.hideProgressBar();
-						panelTable.setCursor(Cursor.getDefaultCursor());
+						output = new View(null, Collections.emptyList());
 					}
-				});
-			}
-			catch (Exception e)
-			{
-				SwingUtilities.invokeLater(() ->
-				{
-					this.hideProgressBar();
-					panelTable.setCursor(Cursor.getDefaultCursor());
-					this.handleError(e);
-				});
-			}
-		});
-	}
 
-	private void submitTask(Runnable task)
-	{
-		executorService.submit(() ->
-		{
-			try
-			{
-				task.run();
-			}
-			catch (Exception e)
-			{
-				SwingUtilities.invokeLater(() ->
+					final View finalOutput = output;
+
+					SwingUtilities.invokeLater(() ->
+					{
+						try
+						{
+							if (finalOutput.node != null)
+							{
+								currentNode = finalOutput.node;
+								MainWindow.this.setTitle(currentNode.getName() + APP_TITLE);
+								tableModel.setNodes(finalOutput.children);
+								setColumnWidth(table, 0, 16 + ICON_PADDING);
+							}
+							else
+							{
+								System.err.println("Path not found: " + path);
+								MainWindow.this.showErrorMessage("Error", "Path not found: " + path);
+								tableModel.setNodes(Collections.emptyList());
+							}
+						}
+						finally
+						{
+							MainWindow.this.hideProgressBar();
+							panelTable.setCursor(Cursor.getDefaultCursor());
+						}
+					});
+				}
+				catch (Exception e)
 				{
-					handleError(e);
-				});
+					SwingUtilities.invokeLater(() ->
+					{
+						MainWindow.this.hideProgressBar();
+						panelTable.setCursor(Cursor.getDefaultCursor());
+						MainWindow.this.handleError(e);
+					});
+				}
 			}
 		});
 	}
@@ -756,8 +887,6 @@ public class MainWindow extends JFrame
 
 	private void showPreview(Node node)
 	{
-		// FIXME: move away from EDT
-
 		if (node.isLeaf())
 		{
 			if (node instanceof NodeFS)
@@ -765,9 +894,9 @@ public class MainWindow extends JFrame
 				NodeFS nodeFS = (NodeFS) node;
 				previewFile = nodeFS.getFile();
 
-				if (isImage(previewFile))
+				if (previewFile != null && Util.looksLikeImage(previewFile.getName()))
 				{
-					showPreviewImage(previewFile);
+					showPreviewImage(previewFile.getAbsolutePath());
 					hidePreviewText();
 				}
 				else
@@ -812,32 +941,6 @@ public class MainWindow extends JFrame
 		panelPreviewText.repaint();
 	}
 
-	private static boolean isImage(File file)
-	{
-		if (file == null)
-		{
-			return false;
-		}
-
-		String name = file.toString();
-		if (name == null || name.isEmpty())
-		{
-			return false;
-		}
-
-		name = name.toLowerCase();
-
-		for (String ext : new String[] { "bmp", "gif", "jpeg", "jpg", "png", "tif" })
-		{
-			if (name.endsWith(ext))
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
 	private static String getPreviewText(File file, final int maxPreviewSize)
 	{
 		try (FileInputStream fin = new FileInputStream(file); BufferedInputStream bin = new BufferedInputStream(fin))
@@ -863,69 +966,16 @@ public class MainWindow extends JFrame
 		}
 	}
 
-	private void showPreviewImage(File file)
+	private void showPreviewImage(String fileName)
 	{
-		final int MAX_WIDTH = panelPreview.getWidth();
-		final int MAX_HEIGHT = panelPreview.getHeight();
+		previewImageLoading(new File(fileName).getName());
 
-		submitTask(() ->
-		{
-			ImageIcon icon = null;
-			try
-			{
-				BufferedImage myPicture = ImageIO.read(file);
-
-				if (myPicture != null)
-				{
-					if (myPicture.getWidth() > MAX_WIDTH || myPicture.getHeight() > MAX_HEIGHT)
-					{
-						double kx = (double) myPicture.getWidth() / MAX_WIDTH;
-						double ky = (double) myPicture.getHeight() / MAX_HEIGHT;
-
-						int resizedWidth;
-						int resizedHeight;
-
-						if (kx > ky)
-						{
-							resizedWidth = (int) (myPicture.getWidth() / kx);
-							resizedHeight = (int) (myPicture.getHeight() / kx);
-						}
-						else
-						{
-							resizedWidth = (int) (myPicture.getWidth() / ky);
-							resizedHeight = (int) (myPicture.getHeight() / ky);
-						}
-
-						icon = new ImageIcon(myPicture.getScaledInstance(resizedWidth, resizedHeight, Image.SCALE_FAST));
-					}
-					else
-					{
-						icon = new ImageIcon(myPicture);
-					}
-
-				}
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
-
-			final ImageIcon finalIcon = icon;
-
-			SwingUtilities.invokeLater(() ->
-			{
-				if (finalIcon != null)
-				{
-					previewImage.setIcon(finalIcon);
-					previewImage.setVisible(true);
-				}
-				else
-				{
-					previewImage.setVisible(false);
-				}
-			});
-		});
-
+		System.out.println("Submitted new task for preview " + fileName);
+		previewTask = new PreviewTask(fileName, panelPreview.getWidth(), panelPreview.getHeight());
+//		synchronized (previewTaskLock)
+//		{
+//			previewTaskLock.notify();
+//		}
 	}
 
 	private void showErrorMessage(String title, String message)

@@ -1,5 +1,12 @@
 package org.bosik.filebrowser.core;
 
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+
 /**
  * @author Nikita Bosik
  * @since 2017-09-03
@@ -49,7 +56,7 @@ public class Util
 		return parent + "/" + child;
 	}
 
-	public static boolean looksLikeArchive(String fileName)
+	public static boolean hasExtension(String fileName, String[] extensions)
 	{
 		if (fileName == null || fileName.isEmpty())
 		{
@@ -57,7 +64,26 @@ public class Util
 		}
 
 		fileName = fileName.toLowerCase();
-		return fileName.endsWith(".zip") || fileName.endsWith(".jar") || fileName.endsWith(".war");
+
+		for (String extension : extensions)
+		{
+			if (fileName.endsWith(extension.toLowerCase()))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public static boolean looksLikeArchive(String fileName)
+	{
+		return hasExtension(fileName, new String[] { ".zip", ".jar", ".war" });
+	}
+
+	public static boolean looksLikeImage(String fileName)
+	{
+		return hasExtension(fileName, new String[] { ".bmp", ".gif", ".jpeg", ".jpg", ".png", ".tif" });
 	}
 
 	/**
@@ -76,5 +102,55 @@ public class Util
 		{
 			return null;
 		}
+	}
+
+	public static ImageIcon buildPreviewImage(String fileName, int maxWidth, int maxHeight)
+	{
+		try
+		{
+			BufferedImage myPicture = ImageIO.read(new File(fileName));
+
+			// TODO: check if thread interrupted
+			if (Thread.interrupted())
+			{
+				System.err.println("Preview for " + fileName + " interrupted");
+				return null;
+			}
+
+			if (myPicture != null)
+			{
+				if (myPicture.getWidth() > maxWidth || myPicture.getHeight() > maxHeight)
+				{
+					double kx = (double) myPicture.getWidth() / maxWidth;
+					double ky = (double) myPicture.getHeight() / maxHeight;
+
+					int resizedWidth;
+					int resizedHeight;
+
+					if (kx > ky)
+					{
+						resizedWidth = (int) (myPicture.getWidth() / kx);
+						resizedHeight = (int) (myPicture.getHeight() / kx);
+					}
+					else
+					{
+						resizedWidth = (int) (myPicture.getWidth() / ky);
+						resizedHeight = (int) (myPicture.getHeight() / ky);
+					}
+
+					return new ImageIcon(myPicture.getScaledInstance(resizedWidth, resizedHeight, Image.SCALE_FAST));
+				}
+				else
+				{
+					return new ImageIcon(myPicture);
+				}
+			}
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+
+		return null;
 	}
 }
