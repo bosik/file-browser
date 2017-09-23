@@ -865,53 +865,67 @@ public class MainWindow extends JFrame
 
 	private void showPreviewImage(File file)
 	{
-		try
+		final int MAX_WIDTH = panelPreview.getWidth();
+		final int MAX_HEIGHT = panelPreview.getHeight();
+
+		submitTask(() ->
 		{
-			BufferedImage myPicture = ImageIO.read(file);
-
-			if (myPicture != null)
+			ImageIcon icon = null;
+			try
 			{
-				final int MAX_WIDTH = panelPreview.getWidth();
-				final int MAX_HEIGHT = panelPreview.getHeight();
-				ImageIcon icon;
+				BufferedImage myPicture = ImageIO.read(file);
 
-				if (myPicture.getWidth() > MAX_WIDTH || myPicture.getHeight() > MAX_HEIGHT)
+				if (myPicture != null)
 				{
-					double kx = (double) myPicture.getWidth() / MAX_WIDTH;
-					double ky = (double) myPicture.getHeight() / MAX_HEIGHT;
-
-					int resizedWidth;
-					int resizedHeight;
-
-					if (kx > ky)
+					if (myPicture.getWidth() > MAX_WIDTH || myPicture.getHeight() > MAX_HEIGHT)
 					{
-						resizedWidth = (int) (myPicture.getWidth() / kx);
-						resizedHeight = (int) (myPicture.getHeight() / kx);
+						double kx = (double) myPicture.getWidth() / MAX_WIDTH;
+						double ky = (double) myPicture.getHeight() / MAX_HEIGHT;
+
+						int resizedWidth;
+						int resizedHeight;
+
+						if (kx > ky)
+						{
+							resizedWidth = (int) (myPicture.getWidth() / kx);
+							resizedHeight = (int) (myPicture.getHeight() / kx);
+						}
+						else
+						{
+							resizedWidth = (int) (myPicture.getWidth() / ky);
+							resizedHeight = (int) (myPicture.getHeight() / ky);
+						}
+
+						icon = new ImageIcon(myPicture.getScaledInstance(resizedWidth, resizedHeight, Image.SCALE_FAST));
 					}
 					else
 					{
-						resizedWidth = (int) (myPicture.getWidth() / ky);
-						resizedHeight = (int) (myPicture.getHeight() / ky);
+						icon = new ImageIcon(myPicture);
 					}
 
-					icon = new ImageIcon(myPicture.getScaledInstance(resizedWidth, resizedHeight, Image.SCALE_FAST));
+				}
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+
+			final ImageIcon finalIcon = icon;
+
+			SwingUtilities.invokeLater(() ->
+			{
+				if (finalIcon != null)
+				{
+					previewImage.setIcon(finalIcon);
+					previewImage.setVisible(true);
 				}
 				else
 				{
-					icon = new ImageIcon(myPicture);
+					previewImage.setVisible(false);
 				}
-				previewImage.setIcon(icon);
-				previewImage.setVisible(true);
-			}
-			else
-			{
-				previewImage.setVisible(false);
-			}
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
+			});
+		});
+
 	}
 
 	private void showErrorMessage(String title, String message)
