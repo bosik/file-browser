@@ -10,6 +10,7 @@ import org.bosik.filebrowser.core.nodes.ftp.NodeFtpFolder;
 import org.bosik.filebrowser.core.nodes.ftp.ServerURL;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,6 +24,7 @@ public class ResolverFTP implements PathResolver
 {
 	private final CredentialsProvider credentialsProvider;
 	private final Map<ServerURL, FTPClient> clients = new ConcurrentHashMap<>();
+	private final Map<String, Credentials>  cache   = new HashMap<>();
 
 	public ResolverFTP(CredentialsProvider credentialsProvider)
 	{
@@ -36,7 +38,15 @@ public class ResolverFTP implements PathResolver
 		{
 			ServerURL url = ServerURL.parse(path);
 			FTPClient client = clients.computeIfAbsent(url.getRoot(), e -> buildFtpClient(url, credentialsProvider));
-			return new NodeFtpFolder(client, url);
+			if (client != null)
+			{
+				return new NodeFtpFolder(client, url);
+			}
+			else
+			{
+				// failed to login
+				throw new InvalidPathException(path);
+			}
 		}
 		else
 		{
@@ -44,7 +54,7 @@ public class ResolverFTP implements PathResolver
 		}
 	}
 
-	private static FTPClient buildFtpClient(ServerURL address, CredentialsProvider credentialsProvider)
+	private FTPClient buildFtpClient(ServerURL address, CredentialsProvider credentialsProvider)
 	{
 		System.out.println("Building new FTP client for " + address);
 
@@ -67,27 +77,32 @@ public class ResolverFTP implements PathResolver
 			{
 				if (credentialsProvider != null)
 				{
-					Credentials credentials = credentialsProvider.getCredentials(address.getRoot().toString());
-					if (credentials != null)
-					{
-						isLoggedIn = client.login(credentials.getUserName(), credentials.getPassword());
-						System.out.println("FTP: " + client.getReplyString());
+					String serverUrl = address.getRoot().toString();
 
-						if (isLoggedIn)
+					for (;;)
+					{
+						Credentials credentials = getCredentials(credentialsProvider, serverUrl);
+						if (credentials != null)
 						{
-							client.changeWorkingDirectory(address.getPath());
+							isLoggedIn = client.login(credentials.getUserName(), credentials.getPassword());
 							System.out.println("FTP: " + client.getReplyString());
+
+							if (isLoggedIn)
+							{
+								saveCredentials(serverUrl, credentials);
+								client.changeWorkingDirectory(address.getPath());
+								System.out.println("FTP: " + client.getReplyString());
+								break;
+							}
+							else
+							{
+								credentialsProvider.notifyWrongCredentials();
+							}
 						}
 						else
 						{
-							// TODO: handle
-							throw new RuntimeException("Wrong username/password");
+							return null;
 						}
-					}
-					else
-					{
-						// TODO: handle (user cancelled credentials dialog)
-						throw new RuntimeException("User cancelled login to " + address);
 					}
 				}
 				else
@@ -113,5 +128,20 @@ public class ResolverFTP implements PathResolver
 		{
 			throw new RuntimeException(e);
 		}
+	}
+
+	private Credentials getCredentials(CredentialsProvider credentialsProvider, String serverUrl)
+	{
+		if (cache.containsKey(serverUrl))
+		{
+			return cache.get(serverUrl);
+		}
+
+		return credentialsProvider.getCredentials(serverUrl);
+	}
+
+	private void saveCredentials(String serverUrl, Credentials credentials)
+	{
+		cache.put(serverUrl, credentials);
 	}
 }

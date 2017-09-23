@@ -12,8 +12,6 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author Nikita Bosik
@@ -21,7 +19,6 @@ import java.util.Map;
  */
 public class CredentialsProviderImpl implements CredentialsProvider
 {
-	private final Map<String, Credentials> cache = new HashMap<>();
 	private final JFrame frame;
 
 	public CredentialsProviderImpl(JFrame frame)
@@ -31,26 +28,6 @@ public class CredentialsProviderImpl implements CredentialsProvider
 
 	@Override
 	public Credentials getCredentials(String serverUrl)
-	{
-		if (cache.containsKey(serverUrl))
-		{
-			return cache.get(serverUrl);
-		}
-
-		Credentials credentials = askCredentials(serverUrl);
-
-		if (credentials != null)
-		{
-			cache.put(serverUrl, credentials);
-			return credentials;
-		}
-		else
-		{
-			return new Credentials("anonymous", "");
-		}
-	}
-
-	private Credentials askCredentials(String serverUrl)
 	{
 		JTextField username = new JTextField();
 		JPasswordField password = new JPasswordField();
@@ -89,5 +66,11 @@ public class CredentialsProviderImpl implements CredentialsProvider
 			// user canceled the dialog
 			return null;
 		}
+	}
+
+	@Override
+	public void notifyWrongCredentials()
+	{
+		JOptionPane.showMessageDialog(frame, "Wrong credentials", "Error", JOptionPane.ERROR_MESSAGE);
 	}
 }
