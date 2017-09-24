@@ -1,6 +1,7 @@
 package org.bosik.filebrowser.core.nodes;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,7 +30,7 @@ public abstract class NodeAbstract implements Node
 	}
 
 	/**
-	 * Sorts nodes so that non-leafs are before leafs
+	 * Sorts nodes alphabetically, plus non-leafs are before leafs
 	 *
 	 * @param nodes Nodes to sort. Will not be changed during the sort.
 	 * @param <T>   Type of node
@@ -37,23 +38,26 @@ public abstract class NodeAbstract implements Node
 	 */
 	protected static <T extends Node> List<T> sort(List<T> nodes)
 	{
-		List<T> result = new ArrayList<T>(nodes.size());
-
-		for (T child : nodes)
+		List<T> result = new ArrayList<T>(nodes);
+		Collections.sort(result, (o1, o2) ->
 		{
-			if (!child.isLeaf())
+			if (o1.isLeaf())
 			{
-				result.add(child);
+				if (!o2.isLeaf())
+				{
+					return +1;
+				}
 			}
-		}
+			else
+			{
+				if (o2.isLeaf())
+				{
+					return -1;
+				}
+			}
 
-		for (T child : nodes)
-		{
-			if (child.isLeaf())
-			{
-				result.add(child);
-			}
-		}
+			return o1.getName().compareTo(o2.getName());
+		});
 
 		return result;
 	}

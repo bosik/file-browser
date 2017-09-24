@@ -972,10 +972,10 @@ public class MainWindow extends JFrame
 
 		System.out.println("Submitted new task for preview " + fileName);
 		previewTask = new PreviewTask(fileName, panelPreview.getWidth(), panelPreview.getHeight());
-//		synchronized (previewTaskLock)
-//		{
-//			previewTaskLock.notify();
-//		}
+		synchronized (previewTaskLock)
+		{
+			previewTaskLock.notify();
+		}
 	}
 
 	private void showErrorMessage(String title, String message)
