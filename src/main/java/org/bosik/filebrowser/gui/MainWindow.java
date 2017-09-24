@@ -558,6 +558,7 @@ public class MainWindow extends JFrame
 		table.setShowHorizontalLines(false);
 		table.setBackground(Color.WHITE);
 		table.setRowHeight(16 + ICON_PADDING);
+		table.setAutoCreateRowSorter(true);
 
 		tableModel = new TableModel();
 		table.setModel(tableModel);
@@ -571,6 +572,7 @@ public class MainWindow extends JFrame
 
 				if (row >= 0 && row < model.getRowCount())
 				{
+					row = table.convertRowIndexToModel(row);
 					showPreview(model.getNode(row));
 				}
 				else
@@ -588,7 +590,12 @@ public class MainWindow extends JFrame
 			public void actionPerformed(ActionEvent e)
 			{
 				JTable table = (JTable) e.getSource();
-				openTableItem(table.getSelectedRow());
+				int row = table.getSelectedRow();
+				if (row != -1)
+				{
+					row = table.convertRowIndexToModel(row);
+					openTableItem(row);
+				}
 			}
 		});
 
@@ -627,7 +634,12 @@ public class MainWindow extends JFrame
 				if (e.getClickCount() == 2) // double click
 				{
 					JTable table = (JTable) e.getSource();
-					openTableItem(table.rowAtPoint(p));
+					int row = table.rowAtPoint(p);
+					if (row != -1)
+					{
+						row = table.convertRowIndexToModel(row);
+						openTableItem(row);
+					}
 				}
 			}
 		});
