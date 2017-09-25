@@ -5,7 +5,7 @@ Demo file & FTP browser. Shipped with the following features:
 
 * Viewing catalog content on local file system & local network
 * Viewing content of ZIP archives (including *.jar, *.war etc.). Nested archives are not supported yet.
-* Viewing content of FTP servers
+* Viewing content of FTP servers (just navigate to ftp://yourserver.com:port/)
 * Preview image files
 * Preview text/binary files
 * Async UI
