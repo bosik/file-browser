@@ -61,9 +61,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -241,18 +239,61 @@ public class MainWindow extends JFrame
 						}
 					}
 
-					PreviewTask t = previewTask;
-					if (t != null && !t.equals(lastTask))
+					PreviewTask taskBefore = previewTask;
+					if (taskBefore != null)
 					{
-						lastTask = t;
-						System.out.println("Loading " + lastTask.getFileName());
-						ImageIcon preview = Util.buildPreviewImage(lastTask.getFileName(), lastTask.getMaxWidth(), lastTask.getMaxHeight());
+						if (!taskBefore.equals(lastTask) || previewImage.getIcon() == null)
+						{
+							System.out.println("Loading " + taskBefore.getFileName());
+							ImageIcon preview = process(taskBefore);
+
+							PreviewTask taskAfter = previewTask;
+
+							if (taskBefore == taskAfter)
+							{
+								SwingUtilities.invokeLater(() ->
+								{
+									previewImageShow(preview);
+								});
+							}
+							else if (taskAfter == null)
+							{
+								SwingUtilities.invokeLater(() ->
+								{
+									previewImageHide();
+								});
+							}
+						}
+					}
+					else if (lastTask != null)
+					{
 						SwingUtilities.invokeLater(() ->
 						{
-							previewImageShow(preview);
+							previewImageHide();
 						});
 					}
+
+					lastTask = taskBefore;
 				}
+			}
+
+			private ImageIcon process(PreviewTask t)
+			{
+				try
+				{
+					return Util.buildPreviewImage(t.getFileName(), t.getMaxWidth(), t.getMaxHeight());
+				}
+				catch (IOException e)
+				{
+					// TODO: handle
+					e.printStackTrace();
+				}
+				catch (InterruptedException e)
+				{
+					// never occurs
+					e.printStackTrace();
+				}
+				return null;
 			}
 		}.start();
 
@@ -794,6 +835,31 @@ public class MainWindow extends JFrame
 		}
 	}
 
+	private void previewImageHide()
+	{
+		previewImage.setVisible(false);
+		submitPreviewTask(null);
+	}
+
+	private void submitPreviewTask(PreviewTask task)
+	{
+		if (task != null)
+		{
+			previewImageLoading(new File(task.getFileName()).getName());
+			System.out.println("Submitted new task for preview " + task.getFileName());
+		}
+		else
+		{
+			previewImage.setVisible(false);
+		}
+
+		previewTask = task;
+		synchronized (previewTaskLock)
+		{
+			previewTaskLock.notify();
+		}
+	}
+
 	private void showFiles(final Node node)
 	{
 		// skip stub "Loading..." nodes
@@ -914,7 +980,7 @@ public class MainWindow extends JFrame
 				else
 				{
 					showPreviewText(previewFile);
-					hidePreviewImage();
+					previewImageHide();
 				}
 			}
 			else
@@ -931,7 +997,7 @@ public class MainWindow extends JFrame
 	private void showPreviewText(File file)
 	{
 		final int MAX_PREVIEW_SIZE = 1024; // bytes
-		previewText.setText(getPreviewText(file, MAX_PREVIEW_SIZE));
+		previewText.setText(Util.buildPreviewText(file, MAX_PREVIEW_SIZE));
 		panelPreviewText.setVisible(true);
 		panelPreviewText.repaint();
 	}
@@ -939,12 +1005,7 @@ public class MainWindow extends JFrame
 	private void hideFileDetails()
 	{
 		hidePreviewText();
-		hidePreviewImage();
-	}
-
-	private void hidePreviewImage()
-	{
-		previewImage.setVisible(false);
+		previewImageHide();
 	}
 
 	private void hidePreviewText()
@@ -953,41 +1014,9 @@ public class MainWindow extends JFrame
 		panelPreviewText.repaint();
 	}
 
-	private static String getPreviewText(File file, final int maxPreviewSize)
-	{
-		try (FileInputStream fin = new FileInputStream(file); BufferedInputStream bin = new BufferedInputStream(fin))
-		{
-			int character;
-			StringBuilder buf = new StringBuilder(maxPreviewSize + 3);
-			while ((character = bin.read()) != -1 && buf.length() < maxPreviewSize)
-			{
-				buf.append((char) character);
-			}
-
-			if (character != -1)
-			{
-				buf.append("...");
-			}
-
-			return buf.toString();
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-			return "Can't build preview";
-		}
-	}
-
 	private void showPreviewImage(String fileName)
 	{
-		previewImageLoading(new File(fileName).getName());
-
-		System.out.println("Submitted new task for preview " + fileName);
-		previewTask = new PreviewTask(fileName, panelPreview.getWidth(), panelPreview.getHeight());
-		synchronized (previewTaskLock)
-		{
-			previewTaskLock.notify();
-		}
+		submitPreviewTask(new PreviewTask(fileName, panelPreview.getWidth(), panelPreview.getHeight()));
 	}
 
 	private void showErrorMessage(String title, String message)

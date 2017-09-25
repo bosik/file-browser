@@ -4,7 +4,9 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 
 /**
@@ -104,53 +106,79 @@ public class Util
 		}
 	}
 
-	public static ImageIcon buildPreviewImage(String fileName, int maxWidth, int maxHeight)
+	/**
+	 * Builds preview for specified file, scales to fit into specified max size if necessary (preserving proportions)
+	 *
+	 * @param fileName  Image file name
+	 * @param maxWidth  Maximum width to fit into
+	 * @param maxHeight Maximum height to fix into
+	 * @return Preview image, or {@code null} if failed
+	 * @throws IOException          If failed to read image file
+	 * @throws InterruptedException If thread was interrupted during build process
+	 */
+	public static ImageIcon buildPreviewImage(String fileName, int maxWidth, int maxHeight) throws IOException, InterruptedException
 	{
-		try
+		BufferedImage myPicture = ImageIO.read(new File(fileName));
+
+		if (Thread.interrupted())
 		{
-			BufferedImage myPicture = ImageIO.read(new File(fileName));
+			throw new InterruptedException("Building preview for " + fileName + " interrupted");
+		}
 
-			// TODO: check if thread interrupted
-			if (Thread.interrupted())
+		if (myPicture != null)
+		{
+			if (myPicture.getWidth() > maxWidth || myPicture.getHeight() > maxHeight)
 			{
-				System.err.println("Preview for " + fileName + " interrupted");
-				return null;
-			}
+				double kx = (double) myPicture.getWidth() / maxWidth;
+				double ky = (double) myPicture.getHeight() / maxHeight;
 
-			if (myPicture != null)
-			{
-				if (myPicture.getWidth() > maxWidth || myPicture.getHeight() > maxHeight)
+				int resizedWidth;
+				int resizedHeight;
+
+				if (kx > ky)
 				{
-					double kx = (double) myPicture.getWidth() / maxWidth;
-					double ky = (double) myPicture.getHeight() / maxHeight;
-
-					int resizedWidth;
-					int resizedHeight;
-
-					if (kx > ky)
-					{
-						resizedWidth = (int) (myPicture.getWidth() / kx);
-						resizedHeight = (int) (myPicture.getHeight() / kx);
-					}
-					else
-					{
-						resizedWidth = (int) (myPicture.getWidth() / ky);
-						resizedHeight = (int) (myPicture.getHeight() / ky);
-					}
-
-					return new ImageIcon(myPicture.getScaledInstance(resizedWidth, resizedHeight, Image.SCALE_FAST));
+					resizedWidth = (int) (myPicture.getWidth() / kx);
+					resizedHeight = (int) (myPicture.getHeight() / kx);
 				}
 				else
 				{
-					return new ImageIcon(myPicture);
+					resizedWidth = (int) (myPicture.getWidth() / ky);
+					resizedHeight = (int) (myPicture.getHeight() / ky);
 				}
+
+				return new ImageIcon(myPicture.getScaledInstance(resizedWidth, resizedHeight, Image.SCALE_FAST));
 			}
+			else
+			{
+				return new ImageIcon(myPicture);
+			}
+		}
+
+		return null;
+	}
+
+	public static String buildPreviewText(File file, final int maxPreviewSize)
+	{
+		try (FileInputStream fin = new FileInputStream(file); BufferedInputStream bin = new BufferedInputStream(fin))
+		{
+			int character;
+			StringBuilder buf = new StringBuilder(maxPreviewSize + 3);
+			while ((character = bin.read()) != -1 && buf.length() < maxPreviewSize)
+			{
+				buf.append((char) character);
+			}
+
+			if (character != -1)
+			{
+				buf.append("...");
+			}
+
+			return buf.toString();
 		}
 		catch (IOException e)
 		{
 			e.printStackTrace();
+			return "Can't build preview";
 		}
-
-		return null;
 	}
 }
