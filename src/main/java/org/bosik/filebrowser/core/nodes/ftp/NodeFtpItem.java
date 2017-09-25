@@ -12,8 +12,8 @@ import java.util.Objects;
  */
 public abstract class NodeFtpItem extends NodeAbstract
 {
-	private FTPClient client;
-	private ServerURL url;
+	private final FTPClient client;
+	private final ServerURL url;
 
 	public NodeFtpItem(FTPClient client, ServerURL url)
 	{

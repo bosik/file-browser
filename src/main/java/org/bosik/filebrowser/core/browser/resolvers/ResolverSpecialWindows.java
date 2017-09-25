@@ -21,14 +21,7 @@ public class ResolverSpecialWindows implements PathResolver
 	public Node resolve(String path) throws InvalidPathException
 	{
 		prepareSpecialFolders();
-		if (specialFolders.containsKey(path))
-		{
-			return specialFolders.get(path);
-		}
-		else
-		{
-			return null;
-		}
+		return specialFolders.getOrDefault(path, null);
 	}
 
 	/**

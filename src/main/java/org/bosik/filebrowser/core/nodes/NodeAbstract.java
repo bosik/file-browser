@@ -10,7 +10,7 @@ import java.util.List;
  */
 public abstract class NodeAbstract implements Node
 {
-	private String parent;
+	private final String parent;
 
 	public NodeAbstract(String parent)
 	{

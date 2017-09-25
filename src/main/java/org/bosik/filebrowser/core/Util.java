@@ -18,8 +18,8 @@ public class Util
 	/**
 	 * Removes leading & trailing (back)slashes, at most one
 	 *
-	 * @param s
-	 * @return
+	 * @param s String to process
+	 * @return Stripped string
 	 */
 	public static String stripeSlashes(String s)
 	{
@@ -39,9 +39,9 @@ public class Util
 	/**
 	 * Concatenate two strings making sure there is exactly one slash between them
 	 *
-	 * @param parent
-	 * @param child
-	 * @return
+	 * @param parent First string to concatenate
+	 * @param child  Second string to concatenate
+	 * @return Concatenated string
 	 */
 	public static String concatenatePath(String parent, String child)
 	{

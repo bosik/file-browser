@@ -29,7 +29,7 @@ public class MainDemoWindow extends JFrame
 	private static final int    BORDER_BIG = 10;
 
 	// SYSTEM
-	private final MyExecutor<TaskType, String> exec  = new MyExecutor<TaskType, String>((executor, task) ->
+	private final MyExecutor<TaskType, String> exec = new MyExecutor<TaskType, String>((executor, task) ->
 	{
 		switch (task.getId())
 		{
@@ -47,7 +47,6 @@ public class MainDemoWindow extends JFrame
 			}
 		}
 	});
-	private final MyExecutor<TaskType, String> exec2 = new MyExecutor(StrategyTemplate.singletonByIdAndParam());
 
 	// =========================================================================================
 

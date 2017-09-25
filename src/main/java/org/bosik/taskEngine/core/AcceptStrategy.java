@@ -6,5 +6,5 @@ package org.bosik.taskEngine.core;
  */
 public interface AcceptStrategy<ID, Param>
 {
-    boolean onBeforeSubmit(MyExecutor<ID, Param> executor, Task<ID, Param> task);
+	boolean onBeforeSubmit(MyExecutor<ID, Param> executor, Task<ID, Param> task);
 }

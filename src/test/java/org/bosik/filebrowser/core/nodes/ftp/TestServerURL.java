@@ -18,13 +18,6 @@ public class TestServerURL
 		Assert.assertEquals(expectedPath, actual.getPath());
 	}
 
-	private static void assertEquals(ServerURL expected, ServerURL actual)
-	{
-		Assert.assertEquals(expected.getHost(), actual.getHost());
-		Assert.assertEquals(expected.getPort(), actual.getPort());
-		Assert.assertEquals(expected.getPath(), actual.getPath());
-	}
-
 	@Test
 	public void test_constructor()
 	{

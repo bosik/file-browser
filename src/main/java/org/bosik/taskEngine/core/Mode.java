@@ -9,23 +9,23 @@ package org.bosik.taskEngine.core;
  */
 public enum Mode
 {
-    /**
-     * Accept new task, leave existing tasks
-     */
-    ACCEPT,
+	/**
+	 * Accept new task, leave existing tasks
+	 */
+	ACCEPT,
 
-    /**
-     * Deny new task, leave existing tasks
-     */
-    DENY,
+	/**
+	 * Deny new task, leave existing tasks
+	 */
+	DENY,
 
-    /**
-     * Accept new task, cancel existing tasks
-     */
-    OVERRIDE,
+	/**
+	 * Accept new task, cancel existing tasks
+	 */
+	OVERRIDE,
 
-    /**
-     * Deny new task, cancel existing tasks
-     */
-    STOP;
+	/**
+	 * Deny new task, cancel existing tasks
+	 */
+	STOP;
 }

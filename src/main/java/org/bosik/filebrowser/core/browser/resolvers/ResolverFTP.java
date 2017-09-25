@@ -79,7 +79,7 @@ public class ResolverFTP implements PathResolver
 				{
 					String serverUrl = address.getRoot().toString();
 
-					for (;;)
+					for (; ; )
 					{
 						Credentials credentials = getCredentials(credentialsProvider, serverUrl);
 						if (credentials != null)

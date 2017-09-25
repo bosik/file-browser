@@ -74,9 +74,9 @@ enum TaskType
 
 class PreviewTask
 {
-	private String fileName;
-	private int    maxWidth;
-	private int    maxHeight;
+	private final String fileName;
+	private final int    maxWidth;
+	private final int    maxHeight;
 
 	public PreviewTask(String fileName, int maxWidth, int maxHeight)
 	{
@@ -165,7 +165,7 @@ public class MainWindow extends JFrame
 	private Node currentNode;
 
 	private volatile PreviewTask previewTask     = null;
-	private          Object      previewTaskLock = new Object();
+	private final    Object      previewTaskLock = new Object();
 
 	// GUI
 	private JPanel       ui;
@@ -251,26 +251,17 @@ public class MainWindow extends JFrame
 
 							if (taskBefore == taskAfter)
 							{
-								SwingUtilities.invokeLater(() ->
-								{
-									previewImageShow(preview);
-								});
+								SwingUtilities.invokeLater(() -> previewImageShow(preview));
 							}
 							else if (taskAfter == null)
 							{
-								SwingUtilities.invokeLater(() ->
-								{
-									previewImageHide();
-								});
+								SwingUtilities.invokeLater(() -> previewImageHide());
 							}
 						}
 					}
 					else if (lastTask != null)
 					{
-						SwingUtilities.invokeLater(() ->
-						{
-							previewImageHide();
-						});
+						SwingUtilities.invokeLater(() -> previewImageHide());
 					}
 
 					lastTask = taskBefore;
@@ -333,20 +324,14 @@ public class MainWindow extends JFrame
 						add(textAddress = new JTextField()
 						{
 							{
-								addActionListener(e ->
-								{
-									showFiles(textAddress.getText());
-								});
+								addActionListener(e -> showFiles(textAddress.getText()));
 							}
 						}, BorderLayout.CENTER);
 
 						add(buttonUp = new JButton("Up")
 						{
 							{
-								addActionListener(e ->
-								{
-									up();
-								});
+								addActionListener(e -> up());
 							}
 						}, BorderLayout.WEST);
 					}
@@ -871,8 +856,8 @@ public class MainWindow extends JFrame
 
 	class View
 	{
-		Node       node;
-		List<Node> children;
+		final Node       node;
+		final List<Node> children;
 
 		View(Node node, List<Node> children)
 		{

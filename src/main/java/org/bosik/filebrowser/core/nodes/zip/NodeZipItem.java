@@ -11,8 +11,8 @@ import java.nio.file.Path;
  */
 public abstract class NodeZipItem extends NodeAbstract
 {
-	private Path path;
-	private Path parentArchive;
+	private final Path path;
+	private final Path parentArchive;
 
 	public NodeZipItem(String parentPath, Path path, Path parentArchive)
 	{

@@ -8,7 +8,7 @@ enum Column
 {
 	ICON(""), NAME("File"), SIZE("Size"), TIME_MODIFIED("Last Modified");
 
-	private String caption;
+	private final String caption;
 
 	Column(String caption)
 	{
