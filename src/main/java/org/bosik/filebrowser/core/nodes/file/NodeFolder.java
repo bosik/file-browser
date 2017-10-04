@@ -58,7 +58,8 @@ public class NodeFolder extends NodeFS
 		}
 		else
 		{
-			files = FileSystemView.getFileSystemView().getRoots();
+			files = File.listRoots();
+//			files = FileSystemView.getFileSystemView().getRoots();
 		}
 
 		for (File file : files)
