@@ -2,7 +2,7 @@ package org.bosik.filebrowser.core.browser.resolvers;
 
 import org.bosik.filebrowser.core.browser.exceptions.InvalidPathException;
 import org.bosik.filebrowser.core.nodes.Node;
-import org.bosik.filebrowser.core.nodes.file.NodeFS;
+import org.bosik.filebrowser.core.nodes.file.NodeFolder;
 
 /**
  * Resolves empty path to a root node
@@ -17,7 +17,7 @@ public class ResolverRoot implements PathResolver
 	{
 		if (path == null || path.isEmpty())
 		{
-			return NodeFS.getRootNode();
+			return new NodeFolder();
 		}
 		else
 		{

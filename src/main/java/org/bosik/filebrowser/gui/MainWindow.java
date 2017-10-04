@@ -11,6 +11,7 @@ import org.bosik.filebrowser.core.browser.resolvers.ResolverSpecialWindows;
 import org.bosik.filebrowser.core.browser.resolvers.ResolverZip;
 import org.bosik.filebrowser.core.nodes.Node;
 import org.bosik.filebrowser.core.nodes.file.NodeFS;
+import org.bosik.filebrowser.core.nodes.file.NodeFolder;
 import org.bosik.taskEngine.core.MyExecutor;
 import org.bosik.taskEngine.core.StrategyTemplate;
 import org.bosik.taskEngine.core.Task;
@@ -724,7 +725,7 @@ public class MainWindow extends JFrame
 
 	private void showRootFile()
 	{
-		currentNode = NodeFS.getRootNode();
+		currentNode = new NodeFolder();
 		DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(currentNode);
 		tree.setModel(new DefaultTreeModel(rootNode));
 		refreshChildren(rootNode, true);

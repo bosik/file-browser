@@ -15,6 +15,18 @@ import java.util.List;
  */
 public class NodeFolder extends NodeFS
 {
+	/**
+	 * Constructor. Creates root node.
+	 */
+	public NodeFolder()
+	{
+		super(null);
+	}
+
+	/**
+	 * Constructor. Creates node associated with the specified file
+	 * @param file
+	 */
 	public NodeFolder(File file)
 	{
 		super(file);
@@ -27,13 +39,27 @@ public class NodeFolder extends NodeFS
 	}
 
 	@Override
+	public String getName()
+	{
+		return (getFile() != null) ? super.getName() : "(root)";
+	}
+
+	@Override
 	public List<Node> getChildren()
 	{
 		System.out.println("Building children for " + getName() + "...");
 
 		List<Node> children = new ArrayList<>();
 
-		File[] files = FileSystemView.getFileSystemView().getFiles(getFile(), false);
+		File[] files;
+		if (getFile() != null)
+		{
+			files = FileSystemView.getFileSystemView().getFiles(getFile(), false);
+		}
+		else
+		{
+			files = FileSystemView.getFileSystemView().getRoots();
+		}
 
 		for (File file : files)
 		{

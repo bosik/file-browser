@@ -61,35 +61,4 @@ public abstract class NodeFS extends NodeAbstract
 		return (file != null) ? FileSystemView.getFileSystemView().getSystemIcon(file) : null;
 	}
 
-	/**
-	 * Builds root node
-	 *
-	 * @return Root node
-	 */
-	public static Node getRootNode()
-	{
-		// FIXME: move this method
-
-		return new NodeFolder(null)
-		{
-			@Override
-			public String getName()
-			{
-				return "(root)";
-			}
-
-			@Override
-			public List<Node> getChildren()
-			{
-				List<Node> children = new ArrayList<>();
-
-				for (File file : FileSystemView.getFileSystemView().getRoots())
-				{
-					children.add(new NodeFolder(file));
-				}
-
-				return children;
-			}
-		};
-	}
 }

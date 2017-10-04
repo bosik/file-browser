@@ -2,7 +2,7 @@ package org.bosik.filebrowser.core.browser.resolvers;
 
 import org.bosik.filebrowser.core.browser.exceptions.InvalidPathException;
 import org.bosik.filebrowser.core.nodes.Node;
-import org.bosik.filebrowser.core.nodes.file.NodeFS;
+import org.bosik.filebrowser.core.nodes.file.NodeFolder;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,7 +33,8 @@ public class ResolverSpecialWindows implements PathResolver
 		{
 			Map<String, Node> map = new ConcurrentHashMap<>();
 
-			for (Node node : NodeFS.getRootNode().getChildren())
+			NodeFolder root = new NodeFolder();
+			for (Node node : root.getChildren())
 			{
 				map.put(node.getName(), node);
 				for (Node subNode : node.getChildren())
