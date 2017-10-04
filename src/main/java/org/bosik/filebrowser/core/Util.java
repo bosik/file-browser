@@ -165,6 +165,16 @@ public class Util
 
 	public static String buildPreviewText(File file, final int maxPreviewSize)
 	{
+		if (!file.exists())
+		{
+			return "File " + file + " doesn't exist anymore";
+		}
+
+		if (!file.isFile())
+		{
+			return "File " + file + " is not a file";
+		}
+
 		try (FileInputStream fin = new FileInputStream(file); BufferedInputStream bin = new BufferedInputStream(fin))
 		{
 			int character;
