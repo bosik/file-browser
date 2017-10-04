@@ -16,13 +16,19 @@ import java.io.IOException;
 public class Util
 {
 	/**
-	 * Removes leading & trailing (back)slashes, at most one
+	 * Removes leading & trailing (back)slashes, at most one.
+	 * For {@code null} or empty string returns the string itself.
 	 *
 	 * @param s String to process
 	 * @return Stripped string
 	 */
 	public static String stripeSlashes(String s)
 	{
+		if (s == null || s.isEmpty())
+		{
+			return s;
+		}
+
 		if (s.startsWith("/") || s.startsWith("\\"))
 		{
 			s = s.substring(1);
