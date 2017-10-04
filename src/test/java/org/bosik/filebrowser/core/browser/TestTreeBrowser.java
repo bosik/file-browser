@@ -1,12 +1,9 @@
 package org.bosik.filebrowser.core.browser;
 
-import org.bosik.filebrowser.core.browser.exceptions.InvalidPathException;
 import org.bosik.filebrowser.core.browser.exceptions.PathException;
 import org.bosik.filebrowser.core.browser.exceptions.PathNotFoundException;
-import org.bosik.filebrowser.core.browser.resolvers.*;
+import org.bosik.filebrowser.core.browser.resolvers.PathResolver;
 import org.bosik.filebrowser.core.nodes.Node;
-import org.bosik.filebrowser.gui.CredentialsProviderImpl;
-import org.bosik.filebrowser.gui.MainWindow;
 import org.junit.Assert;
 import org.junit.Test;
 
