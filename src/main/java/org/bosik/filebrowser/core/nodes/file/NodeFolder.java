@@ -47,7 +47,7 @@ public class NodeFolder extends NodeFS
 	@Override
 	public List<Node> getChildren()
 	{
-		System.out.println("Building children for " + getName() + "...");
+		System.out.println("Building children for " + getFile() + "...");
 
 		List<Node> children = new ArrayList<>();
 
@@ -85,7 +85,7 @@ public class NodeFolder extends NodeFS
 			}
 		}
 
-		System.out.println("Building children for " + getName() + " finished");
+		System.out.println("Building children for " + getFile() + " finished");
 		return sort(children);
 	}
 }

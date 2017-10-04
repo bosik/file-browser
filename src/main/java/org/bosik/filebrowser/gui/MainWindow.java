@@ -64,9 +64,12 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static java.nio.file.StandardWatchEventKinds.*;
 
 enum TaskType
 {
@@ -164,6 +167,8 @@ public class MainWindow extends JFrame
 		}
 	});
 	private Node currentNode;
+	private WatchService watcher;
+	private WatchKey prevWatchKey;
 
 	private volatile PreviewTask previewTask     = null;
 	private final    Object      previewTaskLock = new Object();
@@ -216,6 +221,7 @@ public class MainWindow extends JFrame
 			}
 		});
 
+		// async image preview thread
 		new Thread()
 		{
 			{
@@ -289,6 +295,63 @@ public class MainWindow extends JFrame
 			}
 		}.start();
 
+		try
+		{
+			watcher = FileSystems.getDefault().newWatchService();
+
+			// watcher service thread
+			new Thread()
+			{
+				{
+					setDaemon(true);
+				}
+
+				@Override
+				public void run()
+				{
+					for (; ; )
+					{
+						WatchKey key;
+						try
+						{
+							key = watcher.take();
+						}
+						catch (InterruptedException x)
+						{
+							return;
+						}
+
+						for (WatchEvent<?> event : key.pollEvents())
+						{
+							WatchEvent.Kind<?> kind = event.kind();
+
+							if (kind != OVERFLOW)
+							{
+								WatchEvent<Path> ev = (WatchEvent<Path>) event;
+								Path filename = ev.context();
+								System.out.format("Changed file %s%n", filename);
+
+								SwingUtilities.invokeLater(() -> {
+									showFiles(currentNode, true);
+								});
+							}
+						}
+
+						boolean valid = key.reset();
+						if (!valid)
+						{
+							break;
+						}
+					}
+				}
+			}.start();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+			// ok, we can face it and don't use watcher
+		}
+
 		pack();
 		setMinimumSize(getSize());
 		setLocationByPlatform(true);
@@ -325,7 +388,7 @@ public class MainWindow extends JFrame
 						add(textAddress = new JTextField()
 						{
 							{
-								addActionListener(e -> showFiles(textAddress.getText()));
+								addActionListener(e -> showFiles(textAddress.getText(), false));
 							}
 						}, BorderLayout.CENTER);
 
@@ -573,7 +636,7 @@ public class MainWindow extends JFrame
 		{
 			DefaultMutableTreeNode item = (DefaultMutableTreeNode) path.getLastPathComponent();
 			Node node = (Node) item.getUserObject();
-			showFiles(node);
+			showFiles(node, false);
 		}
 	}
 
@@ -632,8 +695,7 @@ public class MainWindow extends JFrame
 			@Override
 			public void actionPerformed(ActionEvent e)
 			{
-				browser.resetCache(currentNode);
-				showFiles(currentNode);
+				showFiles(currentNode, true);
 			}
 		};
 		table.getInputMap(JTable.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), KEY_ACTION_REFRESH);
@@ -706,7 +768,7 @@ public class MainWindow extends JFrame
 			}
 			else
 			{
-				showFiles(node);
+				showFiles(node, false);
 			}
 		}
 	}
@@ -783,7 +845,7 @@ public class MainWindow extends JFrame
 
 						if (children.size() > 0)
 						{
-							showFiles((Node) children.get(0).getUserObject());
+							showFiles((Node) children.get(0).getUserObject(), false);
 						}
 					}
 				});
@@ -796,7 +858,7 @@ public class MainWindow extends JFrame
 		String parentPath = currentNode.getParentPath();
 		if (parentPath != null)
 		{
-			showFiles(parentPath);
+			showFiles(parentPath, false);
 		}
 	}
 
@@ -846,12 +908,12 @@ public class MainWindow extends JFrame
 		}
 	}
 
-	private void showFiles(final Node node)
+	private void showFiles(final Node node, final boolean forceRefresh)
 	{
 		// skip stub "Loading..." nodes
 		if (node != null)
 		{
-			showFiles(node.getFullPath());
+			showFiles(node.getFullPath(), forceRefresh);
 		}
 	}
 
@@ -867,7 +929,7 @@ public class MainWindow extends JFrame
 		}
 	}
 
-	private void showFiles(String path)
+	private void showFiles(String path, final boolean forceRefresh)
 	{
 		showProgressBar();
 		textAddress.setText(path != null ? path : "");
@@ -886,6 +948,10 @@ public class MainWindow extends JFrame
 					try
 					{
 						Node node = browser.getNode(path);
+						if (forceRefresh)
+						{
+							browser.resetCache(node);
+						}
 						List<Node> nodes = browser.getChildren(node);
 						output = new View(node, nodes);
 					}
@@ -906,6 +972,27 @@ public class MainWindow extends JFrame
 								MainWindow.this.setTitle(currentNode.getName() + APP_TITLE);
 								tableModel.setNodes(finalOutput.children);
 								setColumnWidth(table, 0, 16 + ICON_PADDING);
+
+								try
+								{
+									if (watcher != null)
+									{
+										if (prevWatchKey != null)
+										{
+											prevWatchKey.cancel();
+										}
+										Path p = Paths.get(path);
+										prevWatchKey = p.register(watcher, ENTRY_CREATE, ENTRY_DELETE);
+									}
+								}
+								catch (NoSuchFileException e)
+								{
+									// ignore as functionality is not critical
+								}
+								catch (IOException e)
+								{
+									// ignore as functionality is not critical
+								}
 							}
 							else
 							{
