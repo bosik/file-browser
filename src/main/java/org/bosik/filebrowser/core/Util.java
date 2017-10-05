@@ -197,4 +197,22 @@ public class Util
 			return "Can't build preview";
 		}
 	}
+
+	/**
+	 * Formats file size
+	 * @param length Size of file (in bytes)
+	 * @return String representation (e.g. "640 KB")
+	 */
+	public static String formatFileSize(long length)
+	{
+		final String[] NAMES = new String[] { "bytes", "KB", "MB", "GB", "TB" };
+		int index = 0;
+		while (length > 1024 && index < NAMES.length - 1)
+		{
+			length /= 1024;
+			index++;
+		}
+
+		return String.format("%d %s", length, NAMES[index]);
+	}
 }

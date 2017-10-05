@@ -1,5 +1,6 @@
 package org.bosik.filebrowser.gui;
 
+import org.bosik.filebrowser.core.Util;
 import org.bosik.filebrowser.core.nodes.Node;
 import org.bosik.filebrowser.core.nodes.file.NodeFS;
 
@@ -65,7 +66,7 @@ class TableModel extends AbstractTableModel
 				if (item instanceof NodeFS)
 				{
 					File file = ((NodeFS) item).getFile();
-					return file.isDirectory() ? "" : formatSize(file.length());
+					return file.isDirectory() ? "" : Util.formatFileSize(file.length());
 				}
 				else
 				{
@@ -89,19 +90,6 @@ class TableModel extends AbstractTableModel
 				throw new IllegalArgumentException("Unsupported column type: " + c.name());
 			}
 		}
-	}
-
-	private static String formatSize(long length)
-	{
-		final String[] NAMES = new String[] { "bytes", "KB", "MB", "GB", "TB" };
-		int index = 0;
-		while (length > 1024 && index < NAMES.length - 1)
-		{
-			length /= 1024;
-			index++;
-		}
-
-		return String.format("%d %s", length, NAMES[index]);
 	}
 
 	@Override

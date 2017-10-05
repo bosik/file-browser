@@ -318,6 +318,7 @@ public class MainWindow extends JFrame
 						}
 						catch (InterruptedException x)
 						{
+							System.out.println("Watcher service interrupted");
 							return;
 						}
 
@@ -329,16 +330,13 @@ public class MainWindow extends JFrame
 							{
 								WatchEvent<Path> ev = (WatchEvent<Path>) event;
 								Path filename = ev.context();
-								System.out.format("Changed file %s%n", filename);
+								System.out.println("Changed file: " + filename);
 
-								SwingUtilities.invokeLater(() -> {
-									showFiles(currentNode, true);
-								});
+								SwingUtilities.invokeLater(() -> showFiles(currentNode, true));
 							}
 						}
 
-						boolean valid = key.reset();
-						if (!valid)
+						if (!key.reset())
 						{
 							break;
 						}
@@ -365,7 +363,6 @@ public class MainWindow extends JFrame
 				add(new ResolverRoot()); // must be first
 				add(new ResolverFS());
 				add(new ResolverFTP(new CredentialsProviderImpl(MainWindow.this)));
-				add(new ResolverSpecialWindows());
 				add(new ResolverZip());
 			}
 		});
@@ -985,11 +982,7 @@ public class MainWindow extends JFrame
 										prevWatchKey = p.register(watcher, ENTRY_CREATE, ENTRY_DELETE);
 									}
 								}
-								catch (NoSuchFileException e)
-								{
-									// ignore as functionality is not critical
-								}
-								catch (IOException e)
+								catch (InvalidPathException | IOException e)
 								{
 									// ignore as functionality is not critical
 								}
