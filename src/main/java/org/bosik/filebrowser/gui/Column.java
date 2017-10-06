@@ -6,7 +6,7 @@ package org.bosik.filebrowser.gui;
  */
 enum Column
 {
-	ICON(""), NAME("File"), SIZE("Size"), TIME_MODIFIED("Last Modified");
+	ICON(""), NAME("Name"), SIZE("Size"), TIME_MODIFIED("Date modified");
 
 	private final String caption;
 
