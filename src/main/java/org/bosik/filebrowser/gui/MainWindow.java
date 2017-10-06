@@ -39,7 +39,9 @@ import javax.swing.WindowConstants;
 import javax.swing.border.BevelBorder;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeExpansionListener;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableRowSorter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
@@ -65,9 +67,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static java.nio.file.StandardWatchEventKinds.*;
 
@@ -649,6 +649,22 @@ public class MainWindow extends JFrame
 
 		tableModel = new TableModel();
 		table.setModel(tableModel);
+
+		// custom sorting for size column
+		TableRowSorter tableRowSorter = new TableRowSorter(tableModel);
+		tableRowSorter.setComparator(Column.SIZE.ordinal(), (Comparator<Long>) (o1, o2) -> {
+            long s1 = o1 != null ? o1 : 0;
+            long s2 = o2 != null ? o2 : 0;
+            return s1 > s2 ? +1 : -1;
+        });
+		table.setRowSorter(tableRowSorter);
+
+		// custom renderer for size column
+		final TableCellRenderer renderer = table.getDefaultRenderer(Object.class);
+		table.setDefaultRenderer(Object.class, (table1, value, isSelected, hasFocus, row, column) -> {
+			Object myValue = (column == Column.SIZE.ordinal() && value != null) ? Util.formatFileSize((Long) value) : value;
+			return renderer.getTableCellRendererComponent(table1, myValue, isSelected, hasFocus, row, column);
+		});
 
 		table.getSelectionModel().addListSelectionListener(e ->
 		{

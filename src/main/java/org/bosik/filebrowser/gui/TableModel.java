@@ -63,8 +63,7 @@ class TableModel extends AbstractTableModel
 			}
 			case SIZE:
 			{
-				Long size = item.getSize();
-				return (size != null) ? Util.formatFileSize(size) : "";
+				return item.getSize();
 			}
 			case TIME_MODIFIED:
 			{
