@@ -14,9 +14,12 @@ import java.util.List;
  */
 public class NodeZipFile extends NodeZipItem
 {
-	public NodeZipFile(String parentPath, Path path, Path parentArchive)
+	private long size;
+
+	public NodeZipFile(String parentPath, Path path, Path parentArchive, long size)
 	{
 		super(parentPath, path, parentArchive);
+		this.size = size;
 	}
 
 	@Override
@@ -35,5 +38,11 @@ public class NodeZipFile extends NodeZipItem
 	public Icon getIcon()
 	{
 		return UIManager.getIcon("FileView.fileIcon");
+	}
+
+	@Override
+	public Long getSize()
+	{
+		return size;
 	}
 }

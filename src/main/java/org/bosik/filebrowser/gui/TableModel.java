@@ -25,7 +25,7 @@ class TableModel extends AbstractTableModel
 
 	TableModel()
 	{
-		this(new ArrayList<Node>());
+		this(new ArrayList<>());
 	}
 
 	TableModel(List<Node> nodes)
@@ -63,15 +63,8 @@ class TableModel extends AbstractTableModel
 			}
 			case SIZE:
 			{
-				if (item instanceof NodeFS)
-				{
-					File file = ((NodeFS) item).getFile();
-					return file.isDirectory() ? "" : Util.formatFileSize(file.length());
-				}
-				else
-				{
-					return "";
-				}
+				Long size = item.getSize();
+				return (size != null) ? Util.formatFileSize(size) : "";
 			}
 			case TIME_MODIFIED:
 			{

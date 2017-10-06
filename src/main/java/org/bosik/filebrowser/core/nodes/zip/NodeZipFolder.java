@@ -51,7 +51,7 @@ public class NodeZipFolder extends NodeZipItem
 					@Override
 					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
 					{
-						children.add(new NodeZipFile(NodeZipFolder.this.getFullPath(), file, getParentArchive()));
+						children.add(new NodeZipFile(NodeZipFolder.this.getFullPath(), file, getParentArchive(), attrs.size()));
 
 						return FileVisitResult.CONTINUE;
 					}
@@ -84,5 +84,11 @@ public class NodeZipFolder extends NodeZipItem
 	public Icon getIcon()
 	{
 		return UIManager.getIcon("FileView.directoryIcon");
+	}
+
+	@Override
+	public Long getSize()
+	{
+		return null;
 	}
 }

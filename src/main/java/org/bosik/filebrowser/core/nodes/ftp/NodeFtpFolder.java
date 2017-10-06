@@ -59,7 +59,7 @@ public class NodeFtpFolder extends NodeFtpItem
 					int port = getUrl().getPort();
 					String path = Paths.get(getUrl().getPath()).resolve(file.getName()).toString();
 
-					children.add(new NodeFtpFile(client, new ServerURL(host, port, path)));
+					children.add(new NodeFtpFile(client, new ServerURL(host, port, path), file.getSize()));
 				}
 			}
 
@@ -76,5 +76,11 @@ public class NodeFtpFolder extends NodeFtpItem
 	public Icon getIcon()
 	{
 		return UIManager.getIcon("FileView.directoryIcon");
+	}
+
+	@Override
+	public Long getSize()
+	{
+		return null;
 	}
 }

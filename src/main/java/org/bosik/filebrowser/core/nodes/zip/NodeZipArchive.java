@@ -48,7 +48,7 @@ public class NodeZipArchive extends NodeFS
 					@Override
 					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
 					{
-						children.add(new NodeZipFile(NodeZipArchive.this.getFullPath(), file, NodeZipArchive.this.getFile().toPath()));
+						children.add(new NodeZipFile(NodeZipArchive.this.getFullPath(), file, NodeZipArchive.this.getFile().toPath(), attrs.size()));
 
 						return FileVisitResult.CONTINUE;
 					}

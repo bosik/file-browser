@@ -14,9 +14,12 @@ import java.util.List;
  */
 public class NodeFtpFile extends NodeFtpItem
 {
-	public NodeFtpFile(FTPClient client, ServerURL url)
+	private long size;
+
+	public NodeFtpFile(FTPClient client, ServerURL url, long size)
 	{
 		super(client, url);
+		this.size = size;
 	}
 
 	@Override
@@ -35,5 +38,11 @@ public class NodeFtpFile extends NodeFtpItem
 	public Icon getIcon()
 	{
 		return UIManager.getIcon("FileView.fileIcon");
+	}
+
+	@Override
+	public Long getSize()
+	{
+		return size;
 	}
 }

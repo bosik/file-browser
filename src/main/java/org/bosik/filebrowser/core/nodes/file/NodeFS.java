@@ -61,4 +61,9 @@ public abstract class NodeFS extends NodeAbstract
 		return (file != null) ? FileSystemView.getFileSystemView().getSystemIcon(file) : null;
 	}
 
+	@Override
+	public Long getSize()
+	{
+		return getFile().length();
+	}
 }

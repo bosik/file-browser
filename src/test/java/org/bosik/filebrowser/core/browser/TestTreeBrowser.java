@@ -75,6 +75,12 @@ class DemoNode implements Node
     }
 
     @Override
+    public Long getSize()
+    {
+        return null;
+    }
+
+    @Override
     public String getFullPath()
     {
         return null;

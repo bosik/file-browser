@@ -89,4 +89,10 @@ public class NodeFolder extends NodeFS
 		System.out.println("Building children for " + getFile() + " finished");
 		return sort(children);
 	}
+
+	@Override
+	public Long getSize()
+	{
+		return null;
+	}
 }
