@@ -63,12 +63,12 @@ public class TestServerURL
 	@Test
 	public void test_getParent()
 	{
-		assertEquals("ftpsrv.com", DEFAULT_FTP_PORT, "", ServerURL.parse("ftp://ftpsrv.com/").getParent());
+		Assert.assertEquals(null, ServerURL.parse("ftp://ftpsrv.com/").getParent());
 		assertEquals("ftpsrv.com", DEFAULT_FTP_PORT, "", ServerURL.parse("ftp://ftpsrv.com/foo/").getParent());
 		assertEquals("ftpsrv.com", DEFAULT_FTP_PORT, "foo", ServerURL.parse("ftp://ftpsrv.com/foo/bar/").getParent());
 		assertEquals("ftpsrv.com", DEFAULT_FTP_PORT, "foo/bar", ServerURL.parse("ftp://ftpsrv.com/foo/bar/next/").getParent());
 
-		assertEquals("ftpsrv.com", 9000, "", ServerURL.parse("ftp://ftpsrv.com:9000/").getParent());
+		Assert.assertEquals(null, ServerURL.parse("ftp://ftpsrv.com:9000/").getParent());
 		assertEquals("ftpsrv.com", 9000, "", ServerURL.parse("ftp://ftpsrv.com:9000/foo/").getParent());
 		assertEquals("ftpsrv.com", 9000, "foo", ServerURL.parse("ftp://ftpsrv.com:9000/foo/bar/").getParent());
 		assertEquals("ftpsrv.com", 9000, "foo/bar", ServerURL.parse("ftp://ftpsrv.com:9000/foo/bar/next/").getParent());

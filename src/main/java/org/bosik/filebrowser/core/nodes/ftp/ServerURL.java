@@ -63,7 +63,7 @@ public class ServerURL
 		}
 		else
 		{
-			return this;
+			return null;
 		}
 	}
 

@@ -48,7 +48,7 @@ public abstract class NodeFtpItem extends NodeAbstract
 	@Override
 	public String getParentPath()
 	{
-		return url.getParent().toString();
+		return url.getParent() != null ? url.getParent().toString() : null;
 	}
 
 	public FTPClient getClient()
