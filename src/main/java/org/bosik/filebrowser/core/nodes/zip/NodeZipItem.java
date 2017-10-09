@@ -31,7 +31,10 @@ public abstract class NodeZipItem extends NodeAbstract
 	public String getFullPath()
 	{
 		// Path resolving doesn't work for file's path
-		return Util.concatenatePath(parentArchive.toString(), path.toString());
+		String s = Util.concatenatePath(parentArchive.toString(), path.toString());
+		s = Util.stripeSlashes(s);
+		s = Util.fixSlashesDefault(s);
+		return s;
 	}
 
 	public Path getPath()

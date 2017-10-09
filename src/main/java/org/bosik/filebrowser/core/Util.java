@@ -8,6 +8,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 
 /**
  * @author Nikita Bosik
@@ -97,14 +98,32 @@ public class Util
 	/**
 	 * Replaces all backslashes with normal slashes
 	 *
-	 * @param s
-	 * @return
+	 * @param s String to process
+	 * @return Modified string
 	 */
 	public static String fixBackslashes(String s)
 	{
 		if (s != null)
 		{
 			return s.replace('\\', '/');
+		}
+		else
+		{
+			return null;
+		}
+	}
+
+	/**
+	 * Replaces all slashes & backslashes with the default file system's separator
+	 * @param s String to process
+	 * @return Modified string
+	 */
+	public static String fixSlashesDefault(String s)
+	{
+		if (s != null)
+		{
+			String separator = FileSystems.getDefault().getSeparator();
+			return s.replace("\\", separator).replace("/", separator);
 		}
 		else
 		{
