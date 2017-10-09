@@ -65,17 +65,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.nio.file.*;
+import java.util.*;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
@@ -1046,6 +1037,8 @@ public class MainWindow extends JFrame
 
 	private void expandPath(String path)
 	{
+		// FIXME: move to a separate thread
+
 		// worker thread
 		List<String> p = new ArrayList<>();
 		try
@@ -1067,26 +1060,40 @@ public class MainWindow extends JFrame
 
 		// UI thread
 
-		DefaultMutableTreeNode root = (DefaultMutableTreeNode) tree.getModel().getRoot();
-		for (int i = 0; i < root.getChildCount(); i++)
-		{
-			DefaultMutableTreeNode next = (DefaultMutableTreeNode) root.getChildAt(i);
-			System.out.println(next.getUserObject());
+		Collections.reverse(p);
 
-			// TODO
-			// tree.expand
+		DefaultMutableTreeNode currentTreeNode = (DefaultMutableTreeNode) tree.getModel().getRoot();
+		List<Object> expandPath = new ArrayList<>();
+		expandPath.add(currentTreeNode);
+
+		for (String currentPath : p)
+		{
+			boolean found = false;
+
+			for (int i = 0; i < currentTreeNode.getChildCount(); i++)
+			{
+				DefaultMutableTreeNode nextTreeNode = (DefaultMutableTreeNode) currentTreeNode.getChildAt(i);
+				Node node = (Node) nextTreeNode.getUserObject();
+
+				if (node.getFullPath().equalsIgnoreCase(currentPath))
+				{
+					found = true;
+					expandPath.add(nextTreeNode);
+					currentTreeNode = nextTreeNode;
+					break;
+				}
+			}
+
+			if (!found)
+			{
+				// path not found, giving up
+				return;
+			}
 		}
 
-		// unsorted
-		//		Path p = Paths.get(path);
-		//		if (p.toFile().exists())
-		//		{
-		//			System.out.println(p.getRoot().toString());
-		//			for (int i = 0; i < p.getNameCount(); i++)
-		//			{
-		//				System.out.println(p.getName(i).toString());
-		//			}
-		//		}
+		TreePath tp = new TreePath(expandPath.toArray(new Object[expandPath.size()]));
+		tree.expandPath(tp);
+		tree.setSelectionPath(tp);
 	}
 
 	private static void setColumnWidth(JTable table, int column, int width)
