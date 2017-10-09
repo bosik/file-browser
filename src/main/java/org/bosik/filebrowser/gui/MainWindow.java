@@ -7,7 +7,6 @@ import org.bosik.filebrowser.core.browser.resolvers.PathResolver;
 import org.bosik.filebrowser.core.browser.resolvers.ResolverFS;
 import org.bosik.filebrowser.core.browser.resolvers.ResolverFTP;
 import org.bosik.filebrowser.core.browser.resolvers.ResolverRoot;
-import org.bosik.filebrowser.core.browser.resolvers.ResolverSpecialWindows;
 import org.bosik.filebrowser.core.browser.resolvers.ResolverZip;
 import org.bosik.filebrowser.core.nodes.Node;
 import org.bosik.filebrowser.core.nodes.file.NodeFS;
@@ -66,10 +65,21 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.FileSystems;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
-import static java.nio.file.StandardWatchEventKinds.*;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
+import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 enum TaskType
 {
@@ -166,9 +176,9 @@ public class MainWindow extends JFrame
 			}
 		}
 	});
-	private Node currentNode;
+	private Node         currentNode;
 	private WatchService watcher;
-	private WatchKey prevWatchKey;
+	private WatchKey     prevWatchKey;
 
 	private volatile PreviewTask previewTask     = null;
 	private final    Object      previewTaskLock = new Object();
@@ -652,16 +662,18 @@ public class MainWindow extends JFrame
 
 		// custom sorting for size column
 		TableRowSorter tableRowSorter = new TableRowSorter(tableModel);
-		tableRowSorter.setComparator(Column.SIZE.ordinal(), (Comparator<Long>) (o1, o2) -> {
-            long s1 = o1 != null ? o1 : 0;
-            long s2 = o2 != null ? o2 : 0;
-            return s1 > s2 ? +1 : -1;
-        });
+		tableRowSorter.setComparator(Column.SIZE.ordinal(), (Comparator<Long>) (o1, o2) ->
+		{
+			long s1 = o1 != null ? o1 : 0;
+			long s2 = o2 != null ? o2 : 0;
+			return s1 > s2 ? +1 : -1;
+		});
 		table.setRowSorter(tableRowSorter);
 
 		// custom renderer for size column
 		final TableCellRenderer renderer = table.getDefaultRenderer(Object.class);
-		table.setDefaultRenderer(Object.class, (table1, value, isSelected, hasFocus, row, column) -> {
+		table.setDefaultRenderer(Object.class, (table1, value, isSelected, hasFocus, row, column) ->
+		{
 			Object myValue = (column == Column.SIZE.ordinal() && value != null) ? Util.formatFileSize((Long) value) : value;
 			return renderer.getTableCellRendererComponent(table1, myValue, isSelected, hasFocus, row, column);
 		});
@@ -986,6 +998,8 @@ public class MainWindow extends JFrame
 								tableModel.setNodes(finalOutput.children);
 								setColumnWidth(table, 0, 16 + ICON_PADDING);
 
+								expandPath(path);
+
 								try
 								{
 									if (watcher != null)
@@ -1028,6 +1042,51 @@ public class MainWindow extends JFrame
 				}
 			}
 		});
+	}
+
+	private void expandPath(String path)
+	{
+		// worker thread
+		List<String> p = new ArrayList<>();
+		try
+		{
+			// warming-up the cache
+			Node node = browser.getNode(path);
+			p.add(node.getFullPath());
+			int counter = 0;
+			while (node.getParentPath() != null && counter++ < 1000)
+			{
+				p.add(node.getParentPath());
+				node = browser.getNode(node.getParentPath());
+			}
+		}
+		catch (PathException e)
+		{
+			e.printStackTrace();
+		}
+
+		// UI thread
+
+		DefaultMutableTreeNode root = (DefaultMutableTreeNode) tree.getModel().getRoot();
+		for (int i = 0; i < root.getChildCount(); i++)
+		{
+			DefaultMutableTreeNode next = (DefaultMutableTreeNode) root.getChildAt(i);
+			System.out.println(next.getUserObject());
+
+			// TODO
+			// tree.expand
+		}
+
+		// unsorted
+		//		Path p = Paths.get(path);
+		//		if (p.toFile().exists())
+		//		{
+		//			System.out.println(p.getRoot().toString());
+		//			for (int i = 0; i < p.getNameCount(); i++)
+		//			{
+		//				System.out.println(p.getName(i).toString());
+		//			}
+		//		}
 	}
 
 	private static void setColumnWidth(JTable table, int column, int width)
